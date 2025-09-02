@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Hospital</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a class="brand" href="/login">Organ Donor Chain</a>
+        <ul class="nav-links">
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </div>
+    </nav>
+<section class="hero">
+    <div class="hero-inner">
+        <h1>Onboard Your Hospital</h1>
+        <p>Enable your team to register donors and patients and view live matches.</p>
+    </div>
+</section>
+<div class="container">
+    <h2>Add Hospital</h2>
+    {% if message %}
+    <div class="alert alert-success">{{ message }}</div>
+    {% endif %}
+    <form method="POST">
+        <label>Hospital Name</label>
+        <input type="text" name="name" required>
+        <label>Email</label>
+        <input type="text" name="email" required>
+        <label>Location</label>
+        <input type="text" name="location" required>
+        <label>Password</label>
+        <input type="password" name="password" required>
+        <button type="submit">Add Hospital</button>
+    </form>
+    <br>
+    <a href="/manage_hospitals" class="btn-primary">Manage Hospitals</a>
+</div>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Matches</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a class="brand" href="/login">Organ Donor Chain</a>
+        <ul class="nav-links">
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </div>
+    </nav>
+<section class="hero">
+    <div class="hero-inner">
+        <h1>Organ Donation Saves Lives</h1>
+        <p>Our matching engine connects donors and patients quickly, securely, and transparently to maximize successful transplants.</p>
+    </div>
+</section>
+<section class="features">
+    <div class="features-grid">
+        <div class="feature-card">
+            <h3>Smart Matching</h3>
+            <p>Matches based on organ type, blood type, and configurable medical criteria.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Hospital Tools</h3>
+            <p>Register donors and patients, view real-time matches, and manage workflows.</p>
+        </div>
+        <div class="feature-card">
+            <h3>Secure & Compliant</h3>
+            <p>Built with role-based access and secure storage for sensitive health data.</p>
+        </div>
+    </div>
+</section>
+<div class="container">
+    <h2>Matched Donors & Patients</h2>
+    <table>
+        <tr>
+            <th>Donor Name</th>
+            <th>Patient Name</th>
+            <th>Organ</th>
+            <th>Blood Type</th>
+        </tr>
+        {% for r in results %}
+        <tr>
+            <td>{{ r[0] }}</td>
+            <td>{{ r[1] }}</td>
+            <td>{{ r[2] }}</td>
+            <td>{{ r[3] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <p><a href="/hospital_dashboard">Back to Dashboard</a></p>
+</div>
+</body>
+</html>

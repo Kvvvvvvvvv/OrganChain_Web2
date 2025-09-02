@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Donor</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a class="brand" href="/login">Organ Donor Chain</a>
+        <ul class="nav-links">
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </div>
+    </nav>
+<section class="hero">
+    <div class="hero-inner">
+        <h1>Honor the Gift of Life</h1>
+        <p>Register donor details to power ethical, life-saving transplants.</p>
+    </div>
+</section>
+<div class="container">
+    <h2>Add Donor</h2>
+    <form method="POST">
+        <label>Name</label>
+        <input type="text" name="name" required>
+        <label>Age</label>
+        <input type="number" name="age" required>
+        <label>Gender</label>
+        <select name="gender">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+        </select>
+        <label>Blood Type</label>
+        <input type="text" name="blood_type" required>
+        <label>Organ</label>
+        <select name="organ">
+            <option value="Kidney">Kidney</option>
+            <option value="Heart">Heart</option>
+            <option value="Lungs">Lungs</option>
+            <option value="Liver">Liver</option>
+        </select>
+        <button type="submit">Add Donor</button>
+    </form>
+</div>
+</body>
+</html>

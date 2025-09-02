@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hospital Dashboard</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a class="brand" href="/login">Organ Donor Chain</a>
+        <ul class="nav-links">
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </div>
+    </nav>
+<section class="hero">
+    <div class="hero-inner">
+        <h1>Hospital Workspace</h1>
+        <p>Manage registrations, track matches, and coordinate transplants efficiently.</p>
+        <div style="margin-top:24px;">
+            <span class="alert alert-info">Logged in as: <b>{{ hospital_name }}</b> | Email: <b>{{ hospital_email }}</b> | Location: <b>{{ hospital_location }}</b></span>
+        </div>
+    </div>
+</section>
+<div class="container container-wide">
+    <h2>Hospital Dashboard</h2>
+    <section class="features" style="padding: 10px 0 0 0;">
+        <div class="features-grid">
+            <div class="feature-card">
+                <h3>Add Donor</h3>
+                <p>Register a new donor with blood type, organ, and demographics.</p>
+                <div style="margin-top:16px;">
+                    <a href="/add_donor"><button type="button">Add Donor</button></a>
+                </div>
+            </div>
+            <div class="feature-card">
+                <h3>Add Patient</h3>
+                <p>Add a patient waiting for a transplant to enable accurate matching.</p>
+                <div style="margin-top:16px;">
+                    <a href="/add_patient"><button type="button">Add Patient</button></a>
+                </div>
+            </div>
+            <div class="feature-card">
+                <h3>View Matches</h3>
+                <p>See current compatible matches based on organ and blood type.</p>
+                <div style="margin-top:16px;">
+                    <a href="/matches"><button type="button">View Matches</button></a>
+                </div>
+            </div>
+            <div class="feature-card">
+                <h3>Logout</h3>
+                <p>Securely end your session on this device.</p>
+                <div style="margin-top:16px;">
+                    <a href="/logout"><button type="button">Logout</button></a>
+                </div>
+            </div>
+        </div>
+    </section>
+    <br>
+    <h3>Your Donors</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Blood Type</th>
+                    <th>Organ</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in donors %}
+                <tr>
+                    <td>{{ d[0] }}</td>
+                    <td>{{ d[1] }}</td>
+                    <td>{{ d[2] }}</td>
+                    <td>{{ d[3] }}</td>
+                    <td>{{ d[4] }}</td>
+                    <td>{{ d[5] }}</td>
+                    <td>{{ d[6] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <br>
+    <h3>Your Patients</h3>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Blood Type</th>
+                    <th>Organ</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in patients %}
+                <tr>
+                    <td>{{ p[0] }}</td>
+                    <td>{{ p[1] }}</td>
+                    <td>{{ p[2] }}</td>
+                    <td>{{ p[3] }}</td>
+                    <td>{{ p[4] }}</td>
+                    <td>{{ p[5] }}</td>
+                    <td>{{ p[6] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

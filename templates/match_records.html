@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Match Records</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a class="brand" href="/login">Organ Donor Chain</a>
+        <ul class="nav-links">
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </div>
+</nav>
+<section class="hero">
+    <div class="hero-inner">
+        <h1>Match Records</h1>
+        <p>All successful donor-patient matches are listed below.</p>
+    </div>
+</section>
+<div class="container">
+    <h2>Match History</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Donor Name</th>
+                <th>Patient Name</th>
+                <th>Organ</th>
+                <th>Blood Type</th>
+                <th>Donor Hospital</th>
+                <th>Patient Hospital</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for match in matches %}
+            <tr>
+                <td>{{ match.donor_name }}</td>
+                <td>{{ match.patient_name }}</td>
+                <td>{{ match.organ }}</td>
+                <td>{{ match.blood_type }}</td>
+                <td>{{ match.donor_hospital }}</td>
+                <td>{{ match.patient_hospital }}</td>
+                <td>{{ match.match_date }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <br>
+    <a href="/matches" class="btn-primary">Run New Match</a>
+</div>
+</body>
+</html>
