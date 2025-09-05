@@ -3,6 +3,93 @@
 <head>
     <title>Add Patient</title>
     <link rel="stylesheet" href="../static/style.css">
+    <style>
+        .success-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            z-index: 10000;
+            text-align: center;
+            min-width: 400px;
+            animation: popupSlideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        .success-popup h3 {
+            margin: 0 0 15px 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .success-popup p {
+            margin: 0 0 20px 0;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .unique-id {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .close-popup {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .close-popup:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        @keyframes popupSlideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .form-loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
 <nav class="navbar">
@@ -12,36 +99,140 @@
             <li><a href="/logout">Logout</a></li>
         </ul>
     </div>
-    </nav>
+</nav>
+
 <section class="hero">
     <div class="hero-inner">
         <h1>Help Patients Find a Match</h1>
         <p>Add patient details to enable accurate and ethical matching.</p>
     </div>
 </section>
+
 <div class="container">
     <h2>Add Patient</h2>
-    <form method="POST">
-        <label>Name</label>
-        <input type="text" name="name" required>
-        <label>Age</label>
-        <input type="number" name="age" required>
-        <label>Gender</label>
-        <select name="gender">
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-        </select>
-        <label>Blood Type</label>
-        <input type="text" name="blood_type" required>
-        <label>Organ</label>
-        <select name="organ">
-            <option value="Kidney">Kidney</option>
-            <option value="Heart">Heart</option>
-            <option value="Lungs">Lungs</option>
-            <option value="Liver">Liver</option>
-        </select>
+    <form id="patientForm" method="POST">
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" name="name" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Age</label>
+            <input type="number" name="age" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Gender</label>
+            <select name="gender">
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Blood Type</label>
+            <select name="blood_type" required>
+                <option value="">Select Blood Type</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Organ</label>
+            <select name="organ">
+                <option value="Kidney">Kidney</option>
+                <option value="Heart">Heart</option>
+                <option value="Lungs">Lungs</option>
+                <option value="Liver">Liver</option>
+                <option value="Pancreas">Pancreas</option>
+                <option value="Intestine">Intestine</option>
+            </select>
+        </div>
+        
         <button type="submit">Add Patient</button>
     </form>
 </div>
+
+<script>
+document.getElementById('patientForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Add loading state
+    this.classList.add('form-loading');
+    
+    const formData = new FormData(this);
+    
+    fetch('/add_patient', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showSuccessPopup(data.message, data.unique_id);
+            // Reset form
+            this.reset();
+        } else {
+            alert('Error: ' + (data.message || 'Failed to add patient'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error: Failed to add patient');
+    })
+    .finally(() => {
+        // Remove loading state
+        this.classList.remove('form-loading');
+    });
+});
+
+function showSuccessPopup(message, uniqueId) {
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'popup-overlay';
+    
+    // Create popup
+    const popup = document.createElement('div');
+    popup.className = 'success-popup';
+    popup.innerHTML = `
+        <h3>✅ Success!</h3>
+        <p>${message}</p>
+        <div class="unique-id">Unique ID: ${uniqueId}</div>
+        <button class="close-popup" onclick="closePopup()">Close</button>
+    `;
+    
+    // Add to body
+    document.body.appendChild(overlay);
+    document.body.appendChild(popup);
+    
+    // Auto close after 5 seconds
+    setTimeout(() => {
+        closePopup();
+    }, 5000);
+}
+
+function closePopup() {
+    const overlay = document.querySelector('.popup-overlay');
+    const popup = document.querySelector('.success-popup');
+    
+    if (overlay) overlay.remove();
+    if (popup) popup.remove();
+}
+
+// Close popup when clicking overlay
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('popup-overlay')) {
+        closePopup();
+    }
+});
+</script>
+
 </body>
 </html>

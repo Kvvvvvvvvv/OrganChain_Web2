@@ -36,24 +36,70 @@
     </div>
 </section>
 <div class="container">
-    <h2>Matched Donors & Patients</h2>
-    <table>
-        <tr>
-            <th>Donor Name</th>
-            <th>Patient Name</th>
-            <th>Organ</th>
-            <th>Blood Type</th>
-        </tr>
-        {% for r in results %}
-        <tr>
-            <td>{{ r[0] }}</td>
-            <td>{{ r[1] }}</td>
-            <td>{{ r[2] }}</td>
-            <td>{{ r[3] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    <p><a href="/hospital_dashboard">Back to Dashboard</a></p>
+    <h2>🎯 New Matches Found (First-Come-First-Serve)</h2>
+    
+    {% if results %}
+        <div class="alert alert-success">
+            <strong>✅ {{ results|length }} new match(es) found!</strong> These donors and patients have been automatically matched and their status updated.
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Donor Name</th>
+                        <th>Donor ID</th>
+                        <th>Patient Name</th>
+                        <th>Patient ID</th>
+                        <th>Organ</th>
+                        <th>Blood Type</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in results %}
+                    <tr>
+                        <td><strong>{{ r[0] }}</strong></td>
+                        <td style="font-family: 'Courier New', monospace; font-size: 12px; background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px;">{{ r[4][:8] }}...</td>
+                        <td><strong>{{ r[1] }}</strong></td>
+                        <td style="font-family: 'Courier New', monospace; font-size: 12px; background: var(--bg-tertiary); padding: 4px 8px; border-radius: 4px;">{{ r[5][:8] }}...</td>
+                        <td><span style="background: var(--primary-gradient); color: white; padding: 4px 12px; border-radius: 12px; font-weight: 600;">{{ r[2] }}</span></td>
+                        <td><span style="background: var(--secondary-gradient); color: white; padding: 4px 12px; border-radius: 12px; font-weight: 600;">{{ r[3] }}</span></td>
+                        <td><span style="background: #10b981; color: white; padding: 4px 12px; border-radius: 12px; font-weight: 600; font-size: 12px;">MATCHED</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="margin-top: 32px; padding: 24px; background: var(--bg-secondary); border-radius: 16px; border-left: 4px solid #10b981;">
+            <h3 style="color: #059669; margin-bottom: 16px;">📋 Next Steps:</h3>
+            <ul style="color: var(--text-secondary); line-height: 1.8;">
+                <li>Contact the respective hospitals to coordinate the transplant</li>
+                <li>Verify all medical compatibility requirements</li>
+                <li>Schedule the transplant procedure</li>
+                <li>Update patient and donor status in the system</li>
+            </ul>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <strong>ℹ️ No new matches found.</strong> All current donors and patients are already matched or no compatible pairs exist at this time.
+        </div>
+        
+        <div style="text-align: center; padding: 40px; background: var(--bg-secondary); border-radius: 16px; margin: 24px 0;">
+            <h3 style="color: var(--text-secondary); margin-bottom: 16px;">💡 Tips to Find More Matches:</h3>
+            <ul style="color: var(--text-muted); text-align: left; display: inline-block;">
+                <li>Add more donors and patients to the system</li>
+                <li>Check for different organ types and blood types</li>
+                <li>Ensure all medical criteria are properly entered</li>
+            </ul>
+        </div>
+    {% endif %}
+    
+    <div style="margin-top: 32px; text-align: center;">
+        <a href="/hospital_dashboard" class="btn-primary" style="margin-right: 16px;">Back to Dashboard</a>
+        <a href="/hospital_matches" class="btn-secondary">View My Hospital Matches</a>
+    </div>
 </div>
 </body>
 </html>

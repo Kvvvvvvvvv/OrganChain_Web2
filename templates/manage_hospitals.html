@@ -1,8 +1,150 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Manage Hospitals</title>
+    <title>Admin Dashboard - Manage Hospitals</title>
     <link rel="stylesheet" href="../static/style.css">
+    <style>
+        .admin-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+        
+        .admin-card {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: all var(--animation-speed) var(--animation-curve);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .admin-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-strong);
+            border-color: #3b82f6;
+        }
+        
+        .admin-card h3 {
+            margin: 0 0 16px 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .admin-card p {
+            margin: 0 0 20px 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .admin-card .btn {
+            width: 100%;
+            padding: 12px 20px;
+            font-weight: 600;
+            border-radius: 12px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all var(--animation-speed) var(--animation-curve);
+        }
+        
+        .btn-donors {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+        }
+        
+        .btn-donors:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-patients {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+        }
+        
+        .btn-patients:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-matches {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+        }
+        
+        .btn-matches:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+        }
+        
+        .btn-hospitals {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border: none;
+        }
+        
+        .btn-hospitals:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+        }
+        
+        .hospital-table-container {
+            background: var(--bg-primary);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow-medium);
+            border: 2px solid var(--border-color);
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .table-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .hospital-count {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        .delete-btn {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all var(--animation-speed) var(--animation-curve);
+        }
+        
+        .delete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+    </style>
 </head>
 <body>
 <nav class="navbar">
@@ -13,46 +155,94 @@
         </ul>
     </div>
 </nav>
+
 <section class="hero">
     <div class="hero-inner">
-        <h1>Manage Hospitals</h1>
-        <p>View, add, and delete hospital accounts.</p>
+        <h1>🏥 Admin Dashboard</h1>
+        <p>Comprehensive system management and monitoring</p>
     </div>
 </section>
-<div class="container">
-    <h2>Hospital Accounts</h2>
-    {% if message %}
-    <div class="alert alert-success">{{ message }}</div>
-    {% endif %}
-    <table>
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Location</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for hospital in hospitals %}
-            <tr>
-                <td>{{ hospital[0] }}</td>
-                <td>{{ hospital[1] }}</td>
-                <td>{{ hospital[2] }}</td>
-                <td>{{ hospital[3] }}</td>
-                <td>
-                    <form method="POST" action="/delete_hospital" style="display:inline;">
-                        <input type="hidden" name="hospital_id" value="{{ hospital[0] }}">
-                        <button type="submit" class="btn-outline" onclick="return confirm('Are you sure you want to delete this hospital?');">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    <br>
-    <a href="/add_hospital" class="btn-primary">Add New Hospital</a>
+
+<div class="container container-wide">
+    <!-- Admin Dashboard Cards -->
+    <div class="admin-dashboard">
+        <div class="admin-card">
+            <h3>👥 View All Donors</h3>
+            <p>See all donors from all hospitals with detailed information and registration dates</p>
+            <a href="/admin_donors" class="btn btn-donors">View Donors</a>
+        </div>
+        
+        <div class="admin-card">
+            <h3>🏥 View All Patients</h3>
+            <p>Monitor all patients waiting for transplants across all hospitals</p>
+            <a href="/admin_patients" class="btn btn-patients">View Patients</a>
+        </div>
+        
+        <div class="admin-card">
+            <h3>💝 View All Matches</h3>
+            <p>Track all successful organ donation matches and their status</p>
+            <a href="/admin_matches" class="btn btn-matches">View Matches</a>
+        </div>
+        
+        <div class="admin-card">
+            <h3>🏢 Manage Hospitals</h3>
+            <p>Add, view, and delete hospital accounts in the system</p>
+            <a href="/add_hospital" class="btn btn-hospitals">Add Hospital</a>
+        </div>
+    </div>
+    
+    <!-- Hospital Management Section -->
+    <div class="hospital-table-container">
+        <div class="table-header">
+            <h2>Hospital Accounts</h2>
+            <div class="hospital-count">{{ hospitals|length }} Hospital(s)</div>
+        </div>
+        
+        {% if message %}
+        <div class="alert alert-success">{{ message }}</div>
+        {% endif %}
+        
+        {% if hospitals %}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Hospital Name</th>
+                        <th>Email</th>
+                        <th>Location</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for hospital in hospitals %}
+                    <tr>
+                        <td><strong>{{ hospital[0] }}</strong></td>
+                        <td>{{ hospital[1] }}</td>
+                        <td>{{ hospital[2] }}</td>
+                        <td>{{ hospital[3] }}</td>
+                        <td>
+                            <form method="POST" action="/delete_hospital" style="display:inline;">
+                                <input type="hidden" name="hospital_id" value="{{ hospital[0] }}">
+                                <button type="submit" class="delete-btn" onclick="return confirm('⚠️ Are you sure you want to delete {{ hospital[1] }}? This action cannot be undone!');">
+                                    🗑️ Delete
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+            <h3>No Hospitals Found</h3>
+            <p>There are currently no hospitals registered in the system.</p>
+            <a href="/add_hospital" class="btn-primary" style="margin-top: 20px;">Add First Hospital</a>
+        </div>
+        {% endif %}
+    </div>
 </div>
+
 </body>
 </html>

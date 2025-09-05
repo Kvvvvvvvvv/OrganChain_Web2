@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Donors - {{ hospital_name }}</title>
+    <link rel="stylesheet" href="../static/style.css">
+    <style>
+        .stats-header {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: var(--shadow-soft);
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-matched {
+            background: #10b981;
+            color: white;
+        }
+        
+        .status-not-matched {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .unique-id-cell {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            background: var(--bg-tertiary);
+            padding: 4px 8px;
+            border-radius: 6px;
+            color: var(--text-muted);
+        }
+        
+        .hospital-badge {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a class="brand" href="/login">Organ Donor Chain</a>
+        <ul class="nav-links">
+            <li><a href="/hospital_dashboard">Dashboard</a></li>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </div>
+</nav>
+
+<section class="hero">
+    <div class="hero-inner">
+        <h1>👥 My Donors</h1>
+        <p>All donors registered at {{ hospital_name }}</p>
+    </div>
+</section>
+
+<div class="container container-wide">
+    <!-- Statistics -->
+    <div class="stats-header">
+        <div class="stat-card">
+            <div class="stat-number">{{ donors|length }}</div>
+            <div class="stat-label">Total Donors</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ donors|selectattr('7', 'equalto', 'Matched')|list|length }}</div>
+            <div class="stat-label">Matched</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ donors|selectattr('7', 'equalto', 'Not Matched')|list|length }}</div>
+            <div class="stat-label">Available</div>
+        </div>
+    </div>
+    
+    <!-- Donors Table -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Unique ID</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Blood Type</th>
+                    <th>Organ</th>
+                    <th>Status</th>
+                    <th>Registered</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for donor in donors %}
+                <tr>
+                    <td><strong>{{ donor[0] }}</strong></td>
+                    <td class="unique-id-cell">{{ donor[1][:8] }}...</td>
+                    <td>{{ donor[2] }}</td>
+                    <td>{{ donor[3] }}</td>
+                    <td>{{ donor[4] }}</td>
+                    <td><span style="background: var(--secondary-gradient); color: white; padding: 4px 12px; border-radius: 12px; font-weight: 600;">{{ donor[5] }}</span></td>
+                    <td><span style="background: var(--primary-gradient); color: white; padding: 4px 12px; border-radius: 12px; font-weight: 600;">{{ donor[6] }}</span></td>
+                    <td>
+                        {% if donor[7] == 'Matched' %}
+                        <span class="status-badge status-matched">✅ Matched</span>
+                        {% else %}
+                        <span class="status-badge status-not-matched">⏳ Available</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ donor[8][:10] if donor[8] != 'N/A' else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if not donors %}
+    <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
+        <h3>No Donors Found</h3>
+        <p>There are currently no donors registered at {{ hospital_name }}.</p>
+        <a href="/add_donor" class="btn-primary" style="margin-top: 20px;">Add First Donor</a>
+    </div>
+    {% endif %}
+    
+    <div style="margin-top: 32px; text-align: center;">
+        <a href="/hospital_dashboard" class="btn-primary">Back to Dashboard</a>
+    </div>
+</div>
+
+</body>
+</html>

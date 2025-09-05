@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - All Matches</title>
+    <link rel="stylesheet" href="../static/style.css">
+    <style>
+        .stats-header {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+        
+        .stat-card {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: var(--shadow-soft);
+        }
+        
+        .stat-number {
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .match-card {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 24px;
+            padding: 30px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-medium);
+            transition: all var(--animation-speed) var(--animation-curve);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .match-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-strong);
+            border-color: #3b82f6;
+        }
+        
+        .match-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+        }
+        
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .match-id {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        .match-date {
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .match-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+        
+        .participant-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .participant-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .participant-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .donor-icon {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        .patient-icon {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+        
+        .participant-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .participant-details {
+            display: grid;
+            gap: 12px;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .detail-value {
+            font-weight: 700;
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+        
+        .unique-id {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            background: var(--bg-tertiary);
+            padding: 4px 8px;
+            border-radius: 8px;
+            color: var(--text-muted);
+        }
+        
+        .hospital-badge {
+            background: var(--accent-gradient);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .no-matches {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+        }
+        
+        .no-matches h3 {
+            font-size: 24px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+        
+        .no-matches p {
+            font-size: 16px;
+            margin-bottom: 24px;
+        }
+        
+        @media (max-width: 768px) {
+            .match-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .match-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: flex-start;
+            }
+            
+            .stats-header {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar">
+    <div class="nav-container">
+        <a class="brand" href="/login">Organ Donor Chain</a>
+        <ul class="nav-links">
+            <li><a href="/manage_hospitals">Admin Dashboard</a></li>
+            <li><a href="/logout">Logout</a></li>
+        </ul>
+    </div>
+</nav>
+
+<section class="hero">
+    <div class="hero-inner">
+        <h1>💝 All Matches</h1>
+        <p>Comprehensive view of all successful organ donation matches</p>
+    </div>
+</section>
+
+<div class="container container-wide">
+    <!-- Statistics -->
+    <div class="stats-header">
+        <div class="stat-card">
+            <div class="stat-number">{{ matches|length }}</div>
+            <div class="stat-label">Total Matches</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ matches|selectattr('organ', 'equalto', 'Kidney')|list|length }}</div>
+            <div class="stat-label">Kidney Matches</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ matches|selectattr('organ', 'equalto', 'Heart')|list|length }}</div>
+            <div class="stat-label">Heart Matches</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ matches|selectattr('organ', 'equalto', 'Liver')|list|length }}</div>
+            <div class="stat-label">Liver Matches</div>
+        </div>
+    </div>
+    
+    <!-- Matches List -->
+    {% if matches %}
+        <h2>Match History</h2>
+        {% for match in matches %}
+        <div class="match-card">
+            <div class="match-header">
+                <div class="match-id">Match #{{ match.match_id }}</div>
+                <div class="match-date">{{ match.match_date[:10] if match.match_date else 'N/A' }}</div>
+            </div>
+            
+            <div class="match-content">
+                <!-- Donor Card -->
+                <div class="participant-card">
+                    <div class="participant-header">
+                        <div class="participant-icon donor-icon">D</div>
+                        <div class="participant-title">Donor</div>
+                    </div>
+                    <div class="participant-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Name</span>
+                            <span class="detail-value">{{ match.donor_name }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Unique ID</span>
+                            <span class="unique-id">{{ match.donor_unique_id[:8] }}...</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Organ</span>
+                            <span class="detail-value">{{ match.organ }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Blood Type</span>
+                            <span class="detail-value">{{ match.blood_type }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Hospital</span>
+                            <span class="detail-value">{{ match.donor_hospital }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Patient Card -->
+                <div class="participant-card">
+                    <div class="participant-header">
+                        <div class="participant-icon patient-icon">P</div>
+                        <div class="participant-title">Patient</div>
+                    </div>
+                    <div class="participant-details">
+                        <div class="detail-row">
+                            <span class="detail-label">Name</span>
+                            <span class="detail-value">{{ match.patient_name }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Unique ID</span>
+                            <span class="unique-id">{{ match.patient_unique_id[:8] }}...</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Organ</span>
+                            <span class="detail-value">{{ match.organ }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Blood Type</span>
+                            <span class="detail-value">{{ match.blood_type }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Hospital</span>
+                            <span class="detail-value">{{ match.patient_hospital }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-matches">
+            <h3>No Matches Found</h3>
+            <p>There are currently no organ donation matches in the system.</p>
+            <a href="/manage_hospitals" class="btn-primary">Back to Admin Dashboard</a>
+        </div>
+    {% endif %}
+</div>
+
+</body>
+</html>

@@ -20,33 +20,39 @@
     </div>
 </section>
 <div class="container">
-    <h2>Match History</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Donor Name</th>
-                <th>Patient Name</th>
-                <th>Organ</th>
-                <th>Blood Type</th>
-                <th>Donor Hospital</th>
-                <th>Patient Hospital</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for match in matches %}
-            <tr>
-                <td>{{ match.donor_name }}</td>
-                <td>{{ match.patient_name }}</td>
-                <td>{{ match.organ }}</td>
-                <td>{{ match.blood_type }}</td>
-                <td>{{ match.donor_hospital }}</td>
-                <td>{{ match.patient_hospital }}</td>
-                <td>{{ match.match_date }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <h2>Match History (First-Come-First-Serve)</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Donor Name</th>
+                    <th>Donor ID</th>
+                    <th>Patient Name</th>
+                    <th>Patient ID</th>
+                    <th>Organ</th>
+                    <th>Blood Type</th>
+                    <th>Donor Hospital</th>
+                    <th>Patient Hospital</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for match in matches %}
+                <tr>
+                    <td>{{ match.donor_name }}</td>
+                    <td style="font-family: 'Courier New', monospace; font-size: 12px;">{{ match.donor_unique_id[:8] }}...</td>
+                    <td>{{ match.patient_name }}</td>
+                    <td style="font-family: 'Courier New', monospace; font-size: 12px;">{{ match.patient_unique_id[:8] }}...</td>
+                    <td>{{ match.organ }}</td>
+                    <td>{{ match.blood_type }}</td>
+                    <td>{{ match.donor_hospital }}</td>
+                    <td>{{ match.patient_hospital }}</td>
+                    <td>{{ match.match_date[:10] if match.match_date else 'N/A' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     <br>
     <a href="/matches" class="btn-primary">Run New Match</a>
 </div>

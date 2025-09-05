@@ -3,6 +3,246 @@
 <head>
     <title>Hospital Dashboard</title>
     <link rel="stylesheet" href="../static/style.css">
+    <style>
+        .user-info-box {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+            border-radius: 20px;
+            padding: 0;
+            margin: 40px auto 0 auto;
+            max-width: 600px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: slideInUp 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        .user-info-header {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 20px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .user-info-header h3 {
+            margin: 0;
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .user-info-content {
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            font-weight: 700;
+            color: #374151;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 140px;
+        }
+        
+        .info-value {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 18px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: right;
+            flex: 1;
+            margin-left: 20px;
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* Admin Dashboard Styles */
+        .admin-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+        
+        .admin-card {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            transition: all var(--animation-speed) var(--animation-curve);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        .admin-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-strong);
+            border-color: #3b82f6;
+        }
+        
+        .admin-card h3 {
+            margin: 0 0 16px 0;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .admin-card p {
+            margin: 0 0 20px 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .admin-card .btn {
+            width: 100%;
+            padding: 12px 20px;
+            font-weight: 600;
+            border-radius: 12px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all var(--animation-speed) var(--animation-curve);
+        }
+        
+        .btn-donors {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+        }
+        
+        .btn-donors:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn-patients {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+        }
+        
+        .btn-patients:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-matches {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+        }
+        
+        .btn-matches:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+        }
+        
+        .btn-hospitals {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            border: none;
+        }
+        
+        .btn-hospitals:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(245, 158, 11, 0.3);
+        }
+        
+        .hospital-table-container {
+            background: var(--bg-primary);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow-medium);
+            border: 2px solid var(--border-color);
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        
+        .table-header h2 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .hospital-count {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .user-info-box {
+                margin: 30px 20px 0 20px;
+                max-width: none;
+            }
+            
+            .user-info-header {
+                padding: 15px 20px;
+            }
+            
+            .user-info-header h3 {
+                font-size: 20px;
+            }
+            
+            .user-info-content {
+                padding: 20px;
+            }
+            
+            .info-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .info-label {
+                min-width: auto;
+                font-size: 14px;
+            }
+            
+            .info-value {
+                font-size: 16px;
+                text-align: left;
+                margin-left: 0;
+            }
+        }
+    </style>
 </head>
 <body>
 <nav class="navbar">
@@ -17,15 +257,60 @@
     <div class="hero-inner">
         <h1>Hospital Workspace</h1>
         <p>Manage registrations, track matches, and coordinate transplants efficiently.</p>
-        <div style="margin-top:24px;">
-            <span class="alert alert-info">Logged in as: <b>{{ hospital_name }}</b> | Email: <b>{{ hospital_email }}</b> | Location: <b>{{ hospital_location }}</b></span>
+        
+        <!-- User Info Box -->
+        <div class="user-info-box">
+            <div class="user-info-header">
+                <h3>🏥 Hospital Information</h3>
+            </div>
+            <div class="user-info-content">
+                <div class="info-row">
+                    <span class="info-label">Hospital Name:</span>
+                    <span class="info-value">{{ hospital_name }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ hospital_email }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Location:</span>
+                    <span class="info-value">{{ hospital_location }}</span>
+                </div>
+            </div>
         </div>
     </div>
 </section>
 <div class="container container-wide">
     <h2>Hospital Dashboard</h2>
-    <section class="features" style="padding: 10px 0 0 0;">
-        <div class="features-grid">
+    <!-- Hospital Dashboard Cards -->
+    <div class="admin-dashboard">
+        <div class="admin-card">
+            <h3>👥 View My Donors</h3>
+            <p>See all donors from your hospital with detailed information and registration dates</p>
+            <a href="/hospital_donors" class="btn btn-donors">View Donors</a>
+        </div>
+        
+        <div class="admin-card">
+            <h3>🏥 View My Patients</h3>
+            <p>Monitor all patients waiting for transplants at your hospital</p>
+            <a href="/hospital_patients" class="btn btn-patients">View Patients</a>
+        </div>
+        
+        <div class="admin-card">
+            <h3>💝 View My Matches</h3>
+            <p>Track all successful organ donation matches involving your hospital</p>
+            <a href="/hospital_matches" class="btn btn-matches">View Matches</a>
+        </div>
+    </div>
+    
+    <!-- Quick Actions Section -->
+    <div class="hospital-table-container">
+        <div class="table-header">
+            <h2>Quick Actions</h2>
+            <div class="hospital-count">{{ hospital_name }}</div>
+        </div>
+        
+        <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
             <div class="feature-card">
                 <h3>Add Donor</h3>
                 <p>Register a new donor with blood type, organ, and demographics.</p>
@@ -41,13 +326,6 @@
                 </div>
             </div>
             <div class="feature-card">
-                <h3>View Matches</h3>
-                <p>See current compatible matches based on organ and blood type.</p>
-                <div style="margin-top:16px;">
-                    <a href="/matches"><button type="button">View Matches</button></a>
-                </div>
-            </div>
-            <div class="feature-card">
                 <h3>Logout</h3>
                 <p>Securely end your session on this device.</p>
                 <div style="margin-top:16px;">
@@ -55,62 +333,70 @@
                 </div>
             </div>
         </div>
-    </section>
+    </div>
     <br>
-    <h3>Your Donors</h3>
+    <h3>Your Donors (First-Come-First-Serve Order)</h3>
     <div class="table-container">
         <table>
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Unique ID</th>
                     <th>Name</th>
                     <th>Age</th>
                     <th>Gender</th>
                     <th>Blood Type</th>
                     <th>Organ</th>
                     <th>Status</th>
+                    <th>Registered</th>
                 </tr>
             </thead>
             <tbody>
                 {% for d in donors %}
                 <tr>
                     <td>{{ d[0] }}</td>
-                    <td>{{ d[1] }}</td>
+                    <td style="font-family: 'Courier New', monospace; font-size: 12px;">{{ d[1][:8] }}...</td>
                     <td>{{ d[2] }}</td>
                     <td>{{ d[3] }}</td>
                     <td>{{ d[4] }}</td>
                     <td>{{ d[5] }}</td>
                     <td>{{ d[6] }}</td>
+                    <td>{{ d[7] }}</td>
+                    <td>{{ d[8][:10] if d[8] else 'N/A' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
     <br>
-    <h3>Your Patients</h3>
+    <h3>Your Patients (First-Come-First-Serve Order)</h3>
     <div class="table-container">
         <table>
             <thead>
                 <tr>
                     <th>ID</th>
+                    <th>Unique ID</th>
                     <th>Name</th>
                     <th>Age</th>
                     <th>Gender</th>
                     <th>Blood Type</th>
                     <th>Organ</th>
                     <th>Status</th>
+                    <th>Registered</th>
                 </tr>
             </thead>
             <tbody>
                 {% for p in patients %}
                 <tr>
                     <td>{{ p[0] }}</td>
-                    <td>{{ p[1] }}</td>
+                    <td style="font-family: 'Courier New', monospace; font-size: 12px;">{{ p[1][:8] }}...</td>
                     <td>{{ p[2] }}</td>
                     <td>{{ p[3] }}</td>
                     <td>{{ p[4] }}</td>
                     <td>{{ p[5] }}</td>
                     <td>{{ p[6] }}</td>
+                    <td>{{ p[7] }}</td>
+                    <td>{{ p[8][:10] if p[8] else 'N/A' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

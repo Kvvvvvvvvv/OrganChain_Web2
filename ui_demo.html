@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organ Donor Chain - UI/UX Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .demo-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .demo-header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .demo-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .demo-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            animation: slideInUp 0.8s ease-out;
+        }
+        
+        .demo-section h2 {
+            color: #4a5568;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .feature-card {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+            animation: fadeInScale 0.6s ease-out;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+        
+        .feature-card h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .feature-card p {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            color: white;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .demo-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .demo-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .demo-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .demo-table tr:hover {
+            background: #f7fafc;
+        }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .badge-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .badge-warning {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .badge-info {
+            background: #4299e1;
+            color: white;
+        }
+        
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+        
+        .demo-footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            padding: 20px;
+        }
+        
+        .demo-footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .demo-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>🏥 Organ Donor Chain</h1>
+            <p>Modern UI/UX for Organ Donation Management System</p>
+        </div>
+        
+        <div class="demo-section">
+            <h2>📊 System Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">156</div>
+                    <div class="stat-label">Total Donors</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">89</div>
+                    <div class="stat-label">Active Patients</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">23</div>
+                    <div class="stat-label">Successful Matches</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">Partner Hospitals</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🎯 Key Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>👥 Donor Management</h3>
+                    <p>Comprehensive donor registration with unique IDs, blood type matching, and first-come-first-serve priority system.</p>
+                    <a href="#" class="btn btn-success">View Donors</a>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>🏥 Patient Tracking</h3>
+                    <p>Monitor patients waiting for transplants with real-time status updates and match notifications.</p>
+                    <a href="#" class="btn btn-info">View Patients</a>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>💝 Smart Matching</h3>
+                    <p>AI-powered matching system that connects compatible donors with patients based on blood type and organ compatibility.</p>
+                    <a href="#" class="btn btn-warning">View Matches</a>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>🏢 Hospital Network</h3>
+                    <p>Multi-hospital support with role-based access control and centralized administration.</p>
+                    <a href="#" class="btn btn-primary">Manage Hospitals</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>📋 Recent Activity</h2>
+            <table class="demo-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Name</th>
+                        <th>Organ</th>
+                        <th>Blood Type</th>
+                        <th>Status</th>
+                        <th>Hospital</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Donor</td>
+                        <td>John Smith</td>
+                        <td>Kidney</td>
+                        <td>O+</td>
+                        <td><span class="badge badge-success">Matched</span></td>
+                        <td>City General</td>
+                    </tr>
+                    <tr>
+                        <td>Patient</td>
+                        <td>Sarah Johnson</td>
+                        <td>Heart</td>
+                        <td>A+</td>
+                        <td><span class="badge badge-warning">Waiting</span></td>
+                        <td>Metro Hospital</td>
+                    </tr>
+                    <tr>
+                        <td>Donor</td>
+                        <td>Mike Davis</td>
+                        <td>Liver</td>
+                        <td>B+</td>
+                        <td><span class="badge badge-info">Available</span></td>
+                        <td>Regional Medical</td>
+                    </tr>
+                    <tr>
+                        <td>Patient</td>
+                        <td>Emily Brown</td>
+                        <td>Kidney</td>
+                        <td>O-</td>
+                        <td><span class="badge badge-success">Matched</span></td>
+                        <td>University Hospital</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="demo-section">
+            <h2>🚀 Technology Stack</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>Frontend</h3>
+                    <p>Modern responsive design with CSS Grid, Flexbox, and smooth animations for optimal user experience.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>Backend</h3>
+                    <p>Flask-based REST API with SQLite database for reliable data management and real-time updates.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>Security</h3>
+                    <p>Role-based access control, session management, and secure data handling for hospital compliance.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <h3>Scalability</h3>
+                    <p>Modular architecture designed to handle multiple hospitals and thousands of donor/patient records.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="demo-footer">
+        <p>Built with ❤️ for saving lives through organ donation</p>
+        <p><a href="#">Download Source Code</a> | <a href="#">View Documentation</a> | <a href="#">Contact Support</a></p>
+    </div>
+    
+    <script>
+        // Add some interactive animations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate stats on scroll
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animation = 'pulse 2s infinite';
+                    }
+                });
+            });
+            
+            document.querySelectorAll('.stat-card').forEach(card => {
+                observer.observe(card);
+            });
+            
+            // Add hover effects to buttons
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                });
+                
+                btn.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -240,10 +240,10 @@ body::after {
 
 /* Maximum Width Containers */
 .container {
-    width: min(1200px, 95vw);
-    margin: 40px auto;
+    width: min(2000px, 100vw);
+    margin: 20px auto;
     background: var(--bg-primary);
-    padding: 60px 80px;
+    padding: 100px 120px;
     border-radius: 32px;
     box-shadow: var(--shadow-strong);
     border: 1px solid var(--border-light);
@@ -252,13 +252,13 @@ body::after {
 }
 
 .container-wide {
-    width: min(1400px, 96vw);
-    padding: 80px 100px;
+    width: min(2200px, 100vw);
+    padding: 120px 140px;
 }
 
 .container-full {
-    width: min(1600px, 98vw);
-    padding: 100px 120px;
+    width: min(2400px, 100vw);
+    padding: 140px 160px;
 }
 
 @keyframes slideInUp {
@@ -842,12 +842,18 @@ tbody tr:last-child td {
 /* Responsive Design */
 @media (max-width: 1024px) {
     .container {
-        width: min(900px, 94vw);
-        padding: 48px 60px;
+        width: min(100%, 100vw);
+        padding: 80px 100px;
     }
     
     .container-wide {
-        padding: 60px 80px;
+        width: min(100%, 100vw);
+        padding: 100px 120px;
+    }
+    
+    .container-full {
+        width: min(100%, 100vw);
+        padding: 120px 140px;
     }
     
     .nav-container {
@@ -866,14 +872,19 @@ tbody tr:last-child td {
 
 @media (max-width: 768px) {
     .container {
-        width: min(100%, 90vw);
-        padding: 40px 32px;
-        margin: 20px auto;
+        width: min(100%, 100vw);
+        padding: 60px 50px;
+        margin: 10px auto;
     }
     
-    .container-wide,
+    .container-wide {
+        width: min(100%, 100vw);
+        padding: 80px 60px;
+    }
+    
     .container-full {
-        padding: 40px 32px;
+        width: min(100%, 100vw);
+        padding: 100px 70px;
     }
     
     .nav-container {
@@ -944,8 +955,20 @@ tbody tr:last-child td {
 
 @media (max-width: 480px) {
     .container {
-        padding: 32px 24px;
+        width: min(100%, 100vw);
+        padding: 50px 40px;
         border-radius: 20px;
+        margin: 5px auto;
+    }
+    
+    .container-wide {
+        width: min(100%, 100vw);
+        padding: 60px 50px;
+    }
+    
+    .container-full {
+        width: min(100%, 100vw);
+        padding: 70px 60px;
     }
     
     .hero-inner {
