@@ -1,0 +1,7 @@
+# Environment Variables for Production
+# Copy this to .env and fill in your values
+
+FLASK_ENV=production
+SECRET_KEY=your-super-secret-key-here-change-this
+DATABASE_URL=postgresql://user:password@host:port/database
+PORT=8000
