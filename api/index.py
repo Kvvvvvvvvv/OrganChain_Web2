@@ -13,3 +13,7 @@ def handler(request):
 
 def start_response(status, headers):
     pass
+
+# For Vercel compatibility
+if __name__ == "__main__":
+    app.run()
