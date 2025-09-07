@@ -1,41 +1,128 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organ Donation Management System - Login</title>
     <link rel="stylesheet" href="../static/style.css">
 </head>
 <body>
-<nav class="navbar">
-    <div class="nav-container">
-        <a class="brand" href="/login">Organ Donor Chain</a>
-        <ul class="nav-links">
-            <li><a href="/logout">Logout</a></li>
-        </ul>
-    </div>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a class="brand" href="../index.html">Organ Donor Chain</a>
+            <ul class="nav-links">
+                <li><a href="#demo">Demo Pages</a></li>
+                <li><a href="#about">About</a></li>
+            </ul>
+        </div>
     </nav>
-<section class="hero">
-    <div class="hero-inner">
-        <h1>Welcome Back</h1>
-        <p>Sign in to administer hospitals and oversee platform health.</p>
+
+    <section class="hero">
+        <div class="hero-inner">
+            <h1>Organ Donation Management System</h1>
+            <p>Login to access the system or explore demo pages</p>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="login-section">
+            <h2>System Login</h2>
+            {% if message %}
+            <div class="alert alert-error" style="text-align:center;">{{ message }}</div>
+            {% endif %}
+            <form method="POST">
+                <label>Role</label>
+                <select name="role">
+                    <option value="admin">Admin</option>
+                    <option value="hospital">Hospital</option>
+                </select>
+                <label>Email</label>
+                <input type="text" name="email" required>
+                <label>Password</label>
+                <input type="password" name="password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+
+        <div id="demo" class="demo-section">
+            <h2>Demo Pages</h2>
+            <p>Explore the system interface without login:</p>
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>Admin Pages</h3>
+                    <ul>
+                        <li><a href="admin_donors.html">View All Donors</a></li>
+                        <li><a href="admin_patients.html">View All Patients</a></li>
+                        <li><a href="admin_matches.html">View All Matches</a></li>
+                        <li><a href="manage_hospitals.html">Manage Hospitals</a></li>
+                        <li><a href="add_hospital.html">Add Hospital</a></li>
+                        <li><a href="match_records.html">Match Records</a></li>
+                    </ul>
+                </div>
+                <div class="demo-card">
+                    <h3>Hospital Pages</h3>
+                    <ul>
+                        <li><a href="hospital_login.html">Hospital Dashboard</a></li>
+                        <li><a href="hospital_donors.html">Hospital Donors</a></li>
+                        <li><a href="hospital_patients.html">Hospital Patients</a></li>
+                        <li><a href="hospital_matches.html">Hospital Matches</a></li>
+                        <li><a href="add_donor.html">Add Donor</a></li>
+                        <li><a href="add_patient.html">Add Patient</a></li>
+                    </ul>
+                </div>
+                <div class="demo-card">
+                    <h3>System Pages</h3>
+                    <ul>
+                        <li><a href="matches.html">View Matches</a></li>
+                        <li><a href="../ui_demo.html">UI Demo</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="about" class="about-section">
+            <h2>About the System</h2>
+            <div class="about-content">
+                <div class="about-item">
+                    <h3>🏥 Hospital Management</h3>
+                    <p>Manage multiple hospitals and their organ donation programs</p>
+                </div>
+                <div class="about-item">
+                    <h3>🔄 Smart Matching</h3>
+                    <p>Automatic matching based on organ type and blood compatibility</p>
+                </div>
+                <div class="about-item">
+                    <h3>📊 Real-time Tracking</h3>
+                    <p>Track donations, matches, and transplant procedures in real-time</p>
+                </div>
+                <div class="about-item">
+                    <h3>🔒 Secure System</h3>
+                    <p>Role-based access control and secure data management</p>
+                </div>
+            </div>
+        </div>
     </div>
-</section>
-<div class="container">
-    <h2>Login</h2>
-    {% if message %}
-    <div class="alert alert-error" style="text-align:center;">{{ message }}</div>
-    {% endif %}
-    <form method="POST">
-        <label>Role</label>
-        <select name="role">
-            <option value="admin">Admin</option>
-            <option value="hospital">Hospital</option>
-        </select>
-        <label>Email</label>
-        <input type="text" name="email" required>
-        <label>Password</label>
-        <input type="password" name="password" required>
-        <button type="submit">Login</button>
-    </form>
-</div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Organ Donation Management System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
 </body>
 </html>
