@@ -6,12 +6,14 @@
   "scripts": {
     "start": "python -m http.server 3000",
     "build": "echo 'No build process needed for static files'",
-    "serve": "python -m http.server 3000"
+    "serve": "python -m http.server 3000",
+    "dev": "python -m http.server 3000"
   },
   "keywords": [
     "organ-donation",
     "healthcare",
-    "frontend"
+    "frontend",
+    "static-site"
   ],
   "author": "Your Name",
   "license": "MIT",
