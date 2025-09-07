@@ -2,10 +2,13 @@
 .env
 *.env
 
-# Database files
-*.db
-*.sqlite
-*.sqlite3
+# Database files (keep the main database for demo purposes)
+# *.db
+# *.sqlite
+# *.sqlite3
+
+# But ignore backup/duplicate database files
+UserskeertOneDriveDesktopODdatabase.db
 
 # Python cache
 __pycache__/

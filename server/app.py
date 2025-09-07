@@ -3,7 +3,9 @@ import sqlite3
 import uuid
 import datetime
 
-app = Flask(__name__)
+app = Flask(__name__, 
+            template_folder='../client/templates',
+            static_folder='../client/static')
 app.secret_key = "secret123"
 
 DB = "database.db"

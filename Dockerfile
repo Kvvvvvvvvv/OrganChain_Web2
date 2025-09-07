@@ -5,11 +5,15 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # Copy requirements and install
-COPY requirements.txt ./
+COPY server/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app code
-COPY . .
+# Copy server code
+COPY server/ ./
+
+# Copy client templates and static files
+COPY client/templates/ ../client/templates/
+COPY client/static/ ../client/static/
 
 # Expose port
 EXPOSE 5000
