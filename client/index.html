@@ -1,21 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Organ Donation Management System</title>
+    <title>Login</title>
     <link rel="stylesheet" href="static/style.css">
-    <script>
-        // Redirect to admin login immediately
-        window.location.href = 'templates/admin_login.html';
-    </script>
 </head>
 <body>
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
-        <div style="text-align: center;">
-            <h2>Redirecting to Organ Donation Management System...</h2>
-            <p>If you are not redirected automatically, <a href="templates/admin_login.html">click here</a>.</p>
-        </div>
+<nav class="navbar">
+    <div class="nav-container">
+        <a class="brand" href="/">Organ Donor Chain</a>
+        <ul class="nav-links">
+            <li><a href="/logout">Logout</a></li>
+        </ul>
     </div>
+    </nav>
+<section class="hero">
+    <div class="hero-inner">
+        <h1>Welcome Back</h1>
+        <p>Sign in to administer hospitals and oversee platform health.</p>
+    </div>
+</section>
+<div class="container">
+    <h2>Login</h2>
+    {% if message %}
+    <div class="alert alert-error" style="text-align:center;">{{ message }}</div>
+    {% endif %}
+    <form method="POST">
+        <label>Role</label>
+        <select name="role">
+            <option value="admin">Admin</option>
+            <option value="hospital">Hospital</option>
+        </select>
+        <label>Email</label>
+        <input type="text" name="email" required>
+        <label>Password</label>
+        <input type="password" name="password" required>
+        <button type="submit">Login</button>
+    </form>
+</div>
 </body>
 </html>
