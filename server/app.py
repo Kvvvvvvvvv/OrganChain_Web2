@@ -122,6 +122,45 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Deduplicate historical match records and fix statuses
+def dedupe_matches():
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    # Remove extra matches per patient (keep earliest id)
+    c.execute('''
+        DELETE FROM match_record
+        WHERE id NOT IN (
+            SELECT MIN(id) FROM match_record GROUP BY patient_id
+        )
+    ''')
+    # Remove extra matches per donor (keep earliest id)
+    c.execute('''
+        DELETE FROM match_record
+        WHERE id NOT IN (
+            SELECT MIN(id) FROM match_record GROUP BY donor_id
+        )
+    ''')
+    # Sync donor statuses
+    c.execute('''
+        UPDATE donor SET status='Matched'
+        WHERE id IN (SELECT donor_id FROM match_record)
+    ''')
+    c.execute('''
+        UPDATE donor SET status='Not Matched'
+        WHERE id NOT IN (SELECT donor_id FROM match_record)
+    ''')
+    # Sync patient statuses
+    c.execute('''
+        UPDATE patient SET status='Matched'
+        WHERE id IN (SELECT patient_id FROM match_record)
+    ''')
+    c.execute('''
+        UPDATE patient SET status='Not Matched'
+        WHERE id NOT IN (SELECT patient_id FROM match_record)
+    ''')
+    conn.commit()
+    conn.close()
+
 # Initialize DB
 init_db()
 
@@ -356,6 +395,12 @@ def delete_hospital():
     hospital_id = request.form['hospital_id']
     conn = sqlite3.connect(DB)
     c = conn.cursor()
+    # Delete match records where this hospital is involved
+    c.execute("DELETE FROM match_record WHERE donor_hospital_id=? OR patient_hospital_id=?", (hospital_id, hospital_id))
+    # Delete donors and patients for this hospital
+    c.execute("DELETE FROM donor WHERE hospital_id=?", (hospital_id,))
+    c.execute("DELETE FROM patient WHERE hospital_id=?", (hospital_id,))
+    # Delete the hospital itself
     c.execute("DELETE FROM hospital WHERE id=?", (hospital_id,))
     conn.commit()
     conn.close()
@@ -653,52 +698,77 @@ def matches():
     # Try new query with unique_id and registration_date, fallback to old query if needed
     try:
         c.execute('''
-        SELECT d.id as donor_id, p.id as patient_id, d.name as donor, p.name as patient, 
-               d.organ, d.blood_type, d.hospital_id as donor_hospital_id, 
+        SELECT d.id as donor_id, p.id as patient_id, d.name as donor, p.name as patient,
+               d.organ, d.blood_type, d.hospital_id as donor_hospital_id,
                p.hospital_id as patient_hospital_id, d.unique_id as donor_unique_id,
                p.unique_id as patient_unique_id
         FROM donor d
         JOIN patient p
-        ON d.organ = p.organ AND d.blood_type = p.blood_type
-        WHERE d.status='Not Matched' AND p.status='Not Matched'
+          ON d.organ = p.organ AND d.blood_type = p.blood_type
+        WHERE d.status='Not Matched'
+          AND p.status='Not Matched'
+          AND NOT EXISTS (SELECT 1 FROM match_record mr WHERE mr.donor_id = d.id)
+          AND NOT EXISTS (SELECT 1 FROM match_record mr2 WHERE mr2.patient_id = p.id)
         ORDER BY d.registration_date ASC, p.registration_date ASC
         ''')
         results = c.fetchall()
         display_results = []
+        matched_donor_ids = set()
+        matched_patient_ids = set()
         for r in results:
             donor_id, patient_id, donor_name, patient_name, organ, blood, donor_hosp_id, patient_hosp_id, donor_unique_id, patient_unique_id = r
-            # Update status
+            # Skip if donor/patient already matched in this run
+            if donor_id in matched_donor_ids or patient_id in matched_patient_ids:
+                continue
+            # Skip if donor or patient already has a historical match
+            c.execute("SELECT 1 FROM match_record WHERE donor_id=? OR patient_id=? LIMIT 1", (donor_id, patient_id))
+            if c.fetchone():
+                continue
+            # Update status and insert match
             c.execute("UPDATE donor SET status='Matched' WHERE id=?", (donor_id,))
             c.execute("UPDATE patient SET status='Matched' WHERE id=?", (patient_id,))
-            # Insert into match_record
             c.execute("INSERT INTO match_record (donor_id, patient_id, donor_hospital_id, patient_hospital_id, organ, blood_type) VALUES (?, ?, ?, ?, ?, ?)",
                       (donor_id, patient_id, donor_hosp_id, patient_hosp_id, organ, blood))
+            matched_donor_ids.add(donor_id)
+            matched_patient_ids.add(patient_id)
             display_results.append((donor_name, patient_name, organ, blood, donor_unique_id, patient_unique_id))
     except sqlite3.OperationalError:
         # Fallback to old query without unique_id and registration_date
         c.execute('''
-        SELECT d.id as donor_id, p.id as patient_id, d.name as donor, p.name as patient, 
-               d.organ, d.blood_type, d.hospital_id as donor_hospital_id, 
+        SELECT d.id as donor_id, p.id as patient_id, d.name as donor, p.name as patient,
+               d.organ, d.blood_type, d.hospital_id as donor_hospital_id,
                p.hospital_id as patient_hospital_id
         FROM donor d
         JOIN patient p
-        ON d.organ = p.organ AND d.blood_type = p.blood_type
-        WHERE d.status='Not Matched' AND p.status='Not Matched'
+          ON d.organ = p.organ AND d.blood_type = p.blood_type
+        WHERE d.status='Not Matched'
+          AND p.status='Not Matched'
+          AND NOT EXISTS (SELECT 1 FROM match_record mr WHERE mr.donor_id = d.id)
+          AND NOT EXISTS (SELECT 1 FROM match_record mr2 WHERE mr2.patient_id = p.id)
         ''')
         results = c.fetchall()
         display_results = []
+        matched_donor_ids = set()
+        matched_patient_ids = set()
         for r in results:
             donor_id, patient_id, donor_name, patient_name, organ, blood, donor_hosp_id, patient_hosp_id = r
-            # Update status
+            if donor_id in matched_donor_ids or patient_id in matched_patient_ids:
+                continue
+            c.execute("SELECT 1 FROM match_record WHERE donor_id=? OR patient_id=? LIMIT 1", (donor_id, patient_id))
+            if c.fetchone():
+                continue
             c.execute("UPDATE donor SET status='Matched' WHERE id=?", (donor_id,))
             c.execute("UPDATE patient SET status='Matched' WHERE id=?", (patient_id,))
-            # Insert into match_record
             c.execute("INSERT INTO match_record (donor_id, patient_id, donor_hospital_id, patient_hospital_id, organ, blood_type) VALUES (?, ?, ?, ?, ?, ?)",
                       (donor_id, patient_id, donor_hosp_id, patient_hosp_id, organ, blood))
+            matched_donor_ids.add(donor_id)
+            matched_patient_ids.add(patient_id)
             display_results.append((donor_name, patient_name, organ, blood, 'N/A', 'N/A'))
     
     conn.commit()
     conn.close()
+    # Clean up any historical duplicates and sync statuses
+    dedupe_matches()
     return render_template('matches.html', results=display_results)
 
 # ----------------- VIEW MATCH RECORDS -----------------
@@ -706,6 +776,8 @@ def matches():
 def match_records():
     if 'admin' not in session:
         return redirect('/login')
+    # Ensure no duplicates before reporting
+    dedupe_matches()
     conn = sqlite3.connect(DB)
     c = conn.cursor()
     
