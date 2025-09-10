@@ -96,6 +96,17 @@
         </div>
     {% endif %}
     
+    <div style="margin-top: 40px;">
+        <h2 style="margin-bottom: 16px;">Gallery</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+            <img src="../static/images/sample1.jpg" alt="Organ Donation" style="width:100%; height:180px; object-fit: cover; border-radius: 12px; border: 2px solid var(--border-color);">
+            <img src="../static/images/sample2.jpg" alt="Hospital" style="width:100%; height:180px; object-fit: cover; border-radius: 12px; border: 2px solid var(--border-color);">
+            <img src="../static/images/sample3.jpg" alt="Matching" style="width:100%; height:180px; object-fit: cover; border-radius: 12px; border: 2px solid var(--border-color);">
+            <img src="../static/images/sample4.jpg" alt="Transplant" style="width:100%; height:180px; object-fit: cover; border-radius: 12px; border: 2px solid var(--border-color);">
+        </div>
+        <p style="margin-top: 10px; color: var(--text-muted); font-size: 14px;">Place your images in <code>client/static/images/</code> and update the file names above.</p>
+    </div>
+    
     <div style="margin-top: 32px; text-align: center;">
         <a href="/hospital_dashboard" class="btn-primary" style="margin-right: 16px;">Back to Dashboard</a>
         <a href="/hospital_matches" class="btn-secondary">View My Hospital Matches</a>
