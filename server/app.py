@@ -2,13 +2,20 @@ from flask import Flask, render_template, request, redirect, session, jsonify
 import sqlite3
 import uuid
 import datetime
+from blockchain_service import add_match_to_chain, get_all_matches
+import os
 
 app = Flask(__name__, 
             template_folder='../client/templates',
             static_folder='../client/static')
 app.secret_key = "secret123"
 
-DB = "database.db"
+# Use the database file in the same directory as this script
+DB = os.path.join(os.path.dirname(__file__), "database.db")
+
+# Blockchain integration will be handled by the new blockchain_service module
+BLOCKCHAIN_CONTRACT_ADDRESS = None
+print("Blockchain integration ready. Will use new blockchain_service module.")
 
 def init_db():
     conn = sqlite3.connect(DB)
@@ -19,7 +26,8 @@ def init_db():
     CREATE TABLE IF NOT EXISTS admin (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE,
-        password TEXT
+        password TEXT,
+        wallet_address TEXT UNIQUE  -- Add wallet address for blockchain integration
     )
     ''')
     
@@ -30,7 +38,8 @@ def init_db():
         name TEXT,
         email TEXT UNIQUE,
         location TEXT,
-        password TEXT
+        password TEXT,
+        wallet_address TEXT UNIQUE  -- Add wallet address for blockchain integration
     )
     ''')
     
@@ -105,6 +114,17 @@ def init_db():
     if 'registration_date' not in patient_columns:
         c.execute("ALTER TABLE patient ADD COLUMN registration_date TEXT")
     
+    # Add wallet_address columns if they don't exist
+    c.execute("PRAGMA table_info(admin)")
+    admin_columns = [column[1] for column in c.fetchall()]
+    if 'wallet_address' not in admin_columns:
+        c.execute("ALTER TABLE admin ADD COLUMN wallet_address TEXT")
+    
+    c.execute("PRAGMA table_info(hospital)")
+    hospital_columns = [column[1] for column in c.fetchall()]
+    if 'wallet_address' not in hospital_columns:
+        c.execute("ALTER TABLE hospital ADD COLUMN wallet_address TEXT")
+    
     # Update existing records with unique IDs and registration dates if they don't have them
     c.execute("UPDATE donor SET unique_id = ? WHERE unique_id IS NULL", (str(uuid.uuid4()),))
     c.execute("UPDATE patient SET unique_id = ? WHERE unique_id IS NULL", (str(uuid.uuid4()),))
@@ -121,6 +141,8 @@ def init_db():
     
     conn.commit()
     conn.close()
+
+# Blockchain connection handled by new blockchain_service module
 
 # Deduplicate historical match records and fix statuses
 def dedupe_matches():
@@ -173,27 +195,41 @@ def home():
 @app.route('/login', methods=['GET','POST'])
 def login():
     message = None
-    hospital_details = None
     if request.method == 'POST':
         role = request.form['role']
         email = request.form['email']
         password = request.form['password']
+        wallet_address = request.form.get('wallet_address')  # Get wallet address from form
+        
         conn = sqlite3.connect(DB)
         c = conn.cursor()
         if role == 'admin':
             c.execute("SELECT * FROM admin WHERE email=? AND password=?", (email, password))
             user = c.fetchone()
             if user:
+                # For admin, we can optionally check blockchain authentication
                 session['admin'] = user[0]
+                session['admin_wallet'] = user[3] if len(user) > 3 else None
                 return redirect('/manage_hospitals')
         elif role == 'hospital':
             c.execute("SELECT * FROM hospital WHERE email=? AND password=?", (email, password))
             user = c.fetchone()
             if user:
+                # For hospital, check if they are registered on the blockchain
+                hospital_wallet = user[5] if len(user) > 5 else None
+                if hospital_wallet:
+                    # Check if hospital is registered on blockchain
+                    is_registered = blockchain_service.is_hospital_registered(hospital_wallet)
+                    if not is_registered:
+                        message = "Hospital not registered on blockchain"
+                        conn.close()
+                        return render_template('admin_login.html', message=message)
+                
                 session['hospital'] = user[0]
                 session['hospital_name'] = user[1]
                 session['hospital_email'] = user[2]
                 session['hospital_location'] = user[3]
+                session['hospital_wallet'] = hospital_wallet
                 return redirect('/hospital_dashboard')
             else:
                 message = "Invalid credentials"
@@ -362,14 +398,40 @@ def add_hospital():
         email = request.form['email']
         location = request.form['location']
         password = request.form['password']
+        wallet_address = request.form.get('wallet_address')  # Get wallet address
+        
         try:
             conn = sqlite3.connect(DB)
             c = conn.cursor()
-            c.execute("INSERT INTO hospital (name,email,location,password) VALUES (?,?,?,?)",
-                      (name,email,location,password))
+            # Include wallet_address in the insert statement
+            c.execute("INSERT INTO hospital (name,email,location,password,wallet_address) VALUES (?,?,?,?,?)",
+                      (name,email,location,password,wallet_address))
             conn.commit()
             conn.close()
-            message = "Hospital added successfully!"
+            
+            # If wallet address is provided and blockchain is available, register hospital on blockchain
+            blockchain_success = False
+            if wallet_address and blockchain_service.is_connected() and BLOCKCHAIN_CONTRACT_ADDRESS:
+                try:
+                    # For demo purposes, we'll use a default private key
+                    # In production, you would use the admin's private key
+                    default_private_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"  # First Ganache account
+                    
+                    # Register hospital on blockchain
+                    receipt = blockchain_service.add_hospital_to_blockchain(
+                        default_private_key, name, email, location)
+                    
+                    if receipt:
+                        blockchain_success = True
+                        message = f"Hospital added successfully! Blockchain transaction: {receipt.transactionHash.hex()}"
+                    else:
+                        message = "Hospital added to database. Blockchain registration failed."
+                except Exception as e:
+                    print(f"Blockchain registration error: {e}")
+                    message = "Hospital added to database. Blockchain registration failed."
+            else:
+                message = "Hospital added successfully to database only (blockchain not available)."
+                
         except sqlite3.IntegrityError:
             message = "A hospital with this email already exists."
         return render_template('add_hospital.html', message=message)
@@ -415,6 +477,8 @@ def hospital_dashboard():
     hospital_name = session.get('hospital_name')
     hospital_email = session.get('hospital_email')
     hospital_location = session.get('hospital_location')
+    hospital_wallet = session.get('hospital_wallet')
+    
     conn = sqlite3.connect(DB)
     c = conn.cursor()
     
@@ -435,7 +499,10 @@ def hospital_dashboard():
         patients = [(p[0], 'N/A', p[1], p[2], p[3], p[4], p[5], p[6], 'N/A') for p in old_patients]
     
     conn.close()
-    return render_template('hospital_login.html', hospital_name=hospital_name, hospital_email=hospital_email, hospital_location=hospital_location, donors=donors, patients=patients)
+    # Pass hospital_wallet to the template
+    return render_template('hospital_login.html', hospital_name=hospital_name, 
+                          hospital_email=hospital_email, hospital_location=hospital_location,
+                          hospital_wallet=hospital_wallet, donors=donors, patients=patients)
 
 @app.route('/add_donor', methods=['GET','POST'])
 def add_donor():
@@ -456,14 +523,14 @@ def add_donor():
         conn = sqlite3.connect(DB)
         c = conn.cursor()
         
-        # Try new insert with unique_id and registration_date, fallback to old insert if needed
+        # Try new insert with unique_id, status and registration_date, fallback to old insert if needed
         try:
-            c.execute("INSERT INTO donor (unique_id, hospital_id, name, age, gender, blood_type, organ, registration_date) VALUES (?,?,?,?,?,?,?,?)",
-                      (unique_id, hospital_id, name, age, gender, blood_type, organ, registration_date))
+            c.execute("INSERT INTO donor (unique_id, hospital_id, name, age, gender, blood_type, organ, status, registration_date) VALUES (?,?,?,?,?,?,?,?,?)",
+                      (unique_id, hospital_id, name, age, gender, blood_type, organ, 'Not Matched', registration_date))
         except sqlite3.OperationalError:
             # Fallback to old insert without new columns
-            c.execute("INSERT INTO donor (hospital_id, name, age, gender, blood_type, organ) VALUES (?,?,?,?,?,?)",
-                      (hospital_id, name, age, gender, blood_type, organ))
+            c.execute("INSERT INTO donor (hospital_id, name, age, gender, blood_type, organ, status) VALUES (?,?,?,?,?,?,?)",
+                      (hospital_id, name, age, gender, blood_type, organ, 'Not Matched'))
             unique_id = 'N/A'
         
         conn.commit()
@@ -491,14 +558,14 @@ def add_patient():
         conn = sqlite3.connect(DB)
         c = conn.cursor()
         
-        # Try new insert with unique_id and registration_date, fallback to old insert if needed
+        # Try new insert with unique_id, status and registration_date, fallback to old insert if needed
         try:
-            c.execute("INSERT INTO patient (unique_id, hospital_id, name, age, gender, blood_type, organ, registration_date) VALUES (?,?,?,?,?,?,?,?)",
-                      (unique_id, hospital_id, name, age, gender, blood_type, organ, registration_date))
+            c.execute("INSERT INTO patient (unique_id, hospital_id, name, age, gender, blood_type, organ, status, registration_date) VALUES (?,?,?,?,?,?,?,?,?)",
+                      (unique_id, hospital_id, name, age, gender, blood_type, organ, 'Not Matched', registration_date))
         except sqlite3.OperationalError:
             # Fallback to old insert without new columns
-            c.execute("INSERT INTO patient (hospital_id, name, age, gender, blood_type, organ) VALUES (?,?,?,?,?,?)",
-                      (hospital_id, name, age, gender, blood_type, organ))
+            c.execute("INSERT INTO patient (hospital_id, name, age, gender, blood_type, organ, status) VALUES (?,?,?,?,?,?,?)",
+                      (hospital_id, name, age, gender, blood_type, organ, 'Not Matched'))
             unique_id = 'N/A'
         
         conn.commit()
@@ -695,49 +762,130 @@ def matches():
     conn = sqlite3.connect(DB)
     c = conn.cursor()
     
-    # Try new query with unique_id and registration_date, fallback to old query if needed
+    # Improved matching algorithm with proper FCFS implementation and blood compatibility
     try:
+        # Get all unmatched donors ordered by registration date (FCFS)
         c.execute('''
-        SELECT d.id as donor_id, p.id as patient_id, d.name as donor, p.name as patient,
-               d.organ, d.blood_type, d.hospital_id as donor_hospital_id,
-               p.hospital_id as patient_hospital_id, d.unique_id as donor_unique_id,
-               p.unique_id as patient_unique_id
+        SELECT d.id, d.name, d.organ, d.blood_type, d.hospital_id, d.unique_id, d.registration_date, d.age
         FROM donor d
-        JOIN patient p
-          ON d.organ = p.organ AND d.blood_type = p.blood_type
         WHERE d.status='Not Matched'
-          AND p.status='Not Matched'
           AND NOT EXISTS (SELECT 1 FROM match_record mr WHERE mr.donor_id = d.id)
-          AND NOT EXISTS (SELECT 1 FROM match_record mr2 WHERE mr2.patient_id = p.id)
-        ORDER BY d.registration_date ASC, p.registration_date ASC
+        ORDER BY d.registration_date ASC
         ''')
-        results = c.fetchall()
+        donors = c.fetchall()
+        
+        # Get all unmatched patients ordered by registration date (FCFS)
+        c.execute('''
+        SELECT p.id, p.name, p.organ, p.blood_type, p.hospital_id, p.unique_id, p.registration_date, p.age
+        FROM patient p
+        WHERE p.status='Not Matched'
+          AND NOT EXISTS (SELECT 1 FROM match_record mr WHERE mr.patient_id = p.id)
+        ORDER BY p.registration_date ASC
+        ''')
+        patients = c.fetchall()
+        
         display_results = []
         matched_donor_ids = set()
         matched_patient_ids = set()
-        for r in results:
-            donor_id, patient_id, donor_name, patient_name, organ, blood, donor_hosp_id, patient_hosp_id, donor_unique_id, patient_unique_id = r
-            # Skip if donor/patient already matched in this run
-            if donor_id in matched_donor_ids or patient_id in matched_patient_ids:
+        
+        # Blood compatibility rules (who can receive from whom)
+        # A+ can receive from A+, A-, O+, O-
+        # A- can receive from A-, O-
+        # B+ can receive from B+, B-, O+, O-
+        # B- can receive from B-, O-
+        # AB+ can receive from all (universal recipient)
+        # AB- can receive from AB-, A-, B-, O-
+        # O+ can receive from O+, O-
+        # O- can receive from O- (universal donor)
+        blood_compatibility = {
+            'A+': ['A+', 'A-', 'O+', 'O-'],
+            'A-': ['A-', 'O-'],
+            'B+': ['B+', 'B-', 'O+', 'O-'],
+            'B-': ['B-', 'O-'],
+            'AB+': ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],  # Universal recipient
+            'AB-': ['A-', 'B-', 'AB-', 'O-'],
+            'O+': ['O+', 'O-'],
+            'O-': ['O-']  # Universal donor
+        }
+        
+        # Create a mapping of patients by organ and compatible blood types for efficient lookup
+        patient_map = {}
+        for patient in patients:
+            patient_id, patient_name, organ, blood_type, hospital_id, unique_id, reg_date, patient_age = patient
+            # For each compatible blood type, add this patient
+            if blood_type in blood_compatibility:
+                for compatible_blood in blood_compatibility[blood_type]:
+                    key = (organ, compatible_blood)
+                    if key not in patient_map:
+                        patient_map[key] = []
+                    patient_map[key].append(patient)
+        
+        # Match donors with patients based on organ and blood compatibility (FCFS)
+        for donor in donors:
+            donor_id, donor_name, organ, blood_type, donor_hosp_id, donor_unique_id, donor_reg_date, donor_age = donor
+            
+            # Skip if donor already matched
+            if donor_id in matched_donor_ids:
                 continue
-            # Skip if donor or patient already has a historical match
-            c.execute("SELECT 1 FROM match_record WHERE donor_id=? OR patient_id=? LIMIT 1", (donor_id, patient_id))
-            if c.fetchone():
-                continue
-            # Update status and insert match
-            c.execute("UPDATE donor SET status='Matched' WHERE id=?", (donor_id,))
-            c.execute("UPDATE patient SET status='Matched' WHERE id=?", (patient_id,))
-            c.execute("INSERT INTO match_record (donor_id, patient_id, donor_hospital_id, patient_hospital_id, organ, blood_type) VALUES (?, ?, ?, ?, ?, ?)",
-                      (donor_id, patient_id, donor_hosp_id, patient_hosp_id, organ, blood))
-            matched_donor_ids.add(donor_id)
-            matched_patient_ids.add(patient_id)
-            display_results.append((donor_name, patient_name, organ, blood, donor_unique_id, patient_unique_id))
-    except sqlite3.OperationalError:
+                
+            # Look for compatible patient
+            key = (organ, blood_type)
+            if key in patient_map and patient_map[key]:
+                # Get the first (earliest registered) compatible patient
+                patient = patient_map[key].pop(0)
+                patient_id, patient_name, _, _, patient_hosp_id, patient_unique_id, patient_reg_date, patient_age = patient
+                
+                # Skip if patient already matched
+                if patient_id in matched_patient_ids:
+                    continue
+                
+                # Create match in database
+                c.execute("UPDATE donor SET status='Matched' WHERE id=?", (donor_id,))
+                c.execute("UPDATE patient SET status='Matched' WHERE id=?", (patient_id,))
+                c.execute("INSERT INTO match_record (donor_id, patient_id, donor_hospital_id, patient_hospital_id, organ, blood_type) VALUES (?, ?, ?, ?, ?, ?)",
+                          (donor_id, patient_id, donor_hosp_id, patient_hosp_id, organ, blood_type))
+                
+                # Also add match to blockchain
+                try:
+                    # Get hospital names for blockchain record
+                    c.execute("SELECT name FROM hospital WHERE id=?", (donor_hosp_id,))
+                    donor_hospital_result = c.fetchone()
+                    donor_hospital_name = donor_hospital_result[0] if donor_hospital_result else "Unknown Hospital"
+                    
+                    c.execute("SELECT name FROM hospital WHERE id=?", (patient_hosp_id,))
+                    patient_hospital_result = c.fetchone()
+                    patient_hospital_name = patient_hospital_result[0] if patient_hospital_result else "Unknown Hospital"
+                    
+                    # Create match object for blockchain
+                    match_data = {
+                        'donorName': donor_name,
+                        'donorAge': donor_age,
+                        'donorHospital': donor_hospital_name,
+                        'organ': organ,
+                        'bloodType': blood_type,
+                        'patientName': patient_name,
+                        'patientAge': patient_age,
+                        'patientHospital': patient_hospital_name,
+                        'date': datetime.datetime.now().strftime('%Y-%m-%d')
+                    }
+                    
+                    # Add to blockchain
+                    receipt = add_match_to_chain(match_data)
+                    print(f"Match added to blockchain. Transaction hash: {receipt.transactionHash.hex()}")
+                except Exception as e:
+                    print(f"Failed to add match to blockchain: {e}")
+                
+                matched_donor_ids.add(donor_id)
+                matched_patient_ids.add(patient_id)
+                display_results.append((donor_name, patient_name, organ, blood_type, donor_unique_id, patient_unique_id))
+                
+    except sqlite3.OperationalError as e:
+        print(f"Error in matching algorithm: {e}")
         # Fallback to old query without unique_id and registration_date
         c.execute('''
         SELECT d.id as donor_id, p.id as patient_id, d.name as donor, p.name as patient,
                d.organ, d.blood_type, d.hospital_id as donor_hospital_id,
-               p.hospital_id as patient_hospital_id
+               p.hospital_id as patient_hospital_id, d.age as donor_age, p.age as patient_age
         FROM donor d
         JOIN patient p
           ON d.organ = p.organ AND d.blood_type = p.blood_type
@@ -745,13 +893,14 @@ def matches():
           AND p.status='Not Matched'
           AND NOT EXISTS (SELECT 1 FROM match_record mr WHERE mr.donor_id = d.id)
           AND NOT EXISTS (SELECT 1 FROM match_record mr2 WHERE mr2.patient_id = p.id)
+        ORDER BY d.id ASC, p.id ASC
         ''')
         results = c.fetchall()
         display_results = []
         matched_donor_ids = set()
         matched_patient_ids = set()
         for r in results:
-            donor_id, patient_id, donor_name, patient_name, organ, blood, donor_hosp_id, patient_hosp_id = r
+            donor_id, patient_id, donor_name, patient_name, organ, blood, donor_hosp_id, patient_hosp_id, donor_age, patient_age = r
             if donor_id in matched_donor_ids or patient_id in matched_patient_ids:
                 continue
             c.execute("SELECT 1 FROM match_record WHERE donor_id=? OR patient_id=? LIMIT 1", (donor_id, patient_id))
@@ -761,6 +910,37 @@ def matches():
             c.execute("UPDATE patient SET status='Matched' WHERE id=?", (patient_id,))
             c.execute("INSERT INTO match_record (donor_id, patient_id, donor_hospital_id, patient_hospital_id, organ, blood_type) VALUES (?, ?, ?, ?, ?, ?)",
                       (donor_id, patient_id, donor_hosp_id, patient_hosp_id, organ, blood))
+            
+            # Also add match to blockchain
+            try:
+                # Get hospital names for blockchain record
+                c.execute("SELECT name FROM hospital WHERE id=?", (donor_hosp_id,))
+                donor_hospital_result = c.fetchone()
+                donor_hospital_name = donor_hospital_result[0] if donor_hospital_result else "Unknown Hospital"
+                
+                c.execute("SELECT name FROM hospital WHERE id=?", (patient_hosp_id,))
+                patient_hospital_result = c.fetchone()
+                patient_hospital_name = patient_hospital_result[0] if patient_hospital_result else "Unknown Hospital"
+                
+                # Create match object for blockchain
+                match_data = {
+                    'donorName': donor_name,
+                    'donorAge': donor_age,
+                    'donorHospital': donor_hospital_name,
+                    'organ': organ,
+                    'bloodType': blood,
+                    'patientName': patient_name,
+                    'patientAge': patient_age,
+                    'patientHospital': patient_hospital_name,
+                    'date': datetime.datetime.now().strftime('%Y-%m-%d')
+                }
+                
+                # Add to blockchain
+                receipt = add_match_to_chain(match_data)
+                print(f"Match added to blockchain. Transaction hash: {receipt.transactionHash.hex()}")
+            except Exception as e:
+                print(f"Failed to add match to blockchain: {e}")
+            
             matched_donor_ids.add(donor_id)
             matched_patient_ids.add(patient_id)
             display_results.append((donor_name, patient_name, organ, blood, 'N/A', 'N/A'))
@@ -838,11 +1018,31 @@ def match_records():
     conn.close()
     return render_template('match_records.html', matches=matches)
 
-# ----------------- LOGOUT -----------------
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect('/login')
+# ----------------- BLOCKCHAIN INFO -----------------
+@app.route('/blockchain_info')
+def blockchain_info():
+    return render_template('blockchain_info.html')
 
-if __name__ == "__main__":
+# ----------------- BLOCKCHAIN API -----------------
+@app.route("/api/matches", methods=["GET"])
+def api_get_matches():
+    try:
+        matches = get_all_matches()
+        return jsonify({"ok": True, "matches": matches})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/transaction/<tx_hash>", methods=["GET"])
+def api_get_transaction(tx_hash):
+    try:
+        from blockchain_service import get_transaction_details
+        details = get_transaction_details(tx_hash)
+        if details:
+            return jsonify({"ok": True, "transaction": details})
+        else:
+            return jsonify({"ok": False, "error": "Transaction not found"}), 404
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+if __name__ == '__main__':
     app.run(debug=True)

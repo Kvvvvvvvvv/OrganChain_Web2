@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Information</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Blockchain Information</h1>
+        
+        <div class="card">
+            <h2>Latest Matches on Blockchain</h2>
+            <div id="matches-container">
+                <p>Loading blockchain data...</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>How to View Transaction Details in Ganache</h2>
+            <p>To view detailed transaction information in Ganache:</p>
+            <ol>
+                <li>Open Ganache and go to the "Transactions" tab</li>
+                <li>Find the transaction with the hash shown above</li>
+                <li>Click on the transaction to view details</li>
+                <li>In the transaction details, go to the "Event Logs" section</li>
+                <li>You will see detailed information about the match including:
+                    <ul>
+                        <li>Donor name and age</li>
+                        <li>Patient name and age</li>
+                        <li>Hospital information</li>
+                        <li>Organ type (encrypted)</li>
+                        <li>Blood type (encrypted)</li>
+                        <li>Match date</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+        
+        <div class="card">
+            <h2>Blockchain Benefits</h2>
+            <ul>
+                <li><strong>Transparency:</strong> All matches are recorded on the blockchain</li>
+                <li><strong>Immutability:</strong> Match records cannot be altered or deleted</li>
+                <li><strong>Security:</strong> Sensitive data is encrypted</li>
+                <li><strong>Auditability:</strong> All transactions can be traced and verified</li>
+            </ul>
+        </div>
+        
+        <a href="/" class="btn">Back to Home</a>
+    </div>
+
+    <script>
+        // Fetch matches from blockchain
+        async function fetchBlockchainMatches() {
+            try {
+                const response = await fetch('/api/matches');
+                const data = await response.json();
+                
+                const container = document.getElementById('matches-container');
+                
+                if (data.ok && data.matches.length > 0) {
+                    let html = '<div class="matches-list">';
+                    data.matches.forEach((match, index) => {
+                        html += `
+                            <div class="match-item">
+                                <h3>Match #${index + 1}</h3>
+                                <p><strong>Donor:</strong> ${match.donorName} (${match.donorAge} years)</p>
+                                <p><strong>Donor Hospital:</strong> ${match.donorHospital}</p>
+                                <p><strong>Patient:</strong> ${match.patientName} (${match.patientAge} years)</p>
+                                <p><strong>Patient Hospital:</strong> ${match.patientHospital}</p>
+                                <p><strong>Date:</strong> ${match.date}</p>
+                                <p><strong>Encrypted Organ:</strong> ${match.encryptedOrgan.substring(0, 20)}...</p>
+                                <p><strong>Encrypted Blood Type:</strong> ${match.encryptedBloodType.substring(0, 20)}...</p>
+                                <div class="match-details">
+                                    <p><small>This match is permanently recorded on the blockchain. All sensitive information is encrypted for privacy.</small></p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p>No matches found on blockchain.</p>';
+                }
+            } catch (error) {
+                console.error('Error fetching blockchain data:', error);
+                document.getElementById('matches-container').innerHTML = '<p>Error loading blockchain data.</p>';
+            }
+        }
+        
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchBlockchainMatches();
+        });
+    </script>
+</body>
+</html>

@@ -1,143 +1,130 @@
-# Organ Donation Management System
+# OrganChain - Blockchain-Integrated Organ Donation Platform
 
-A web-based system for managing organ donations and patient matching across hospitals.
+A full-stack platform to manage organ donation chains across hospitals, with automatic donor–patient matching, transplant scheduling, and role-based access (Super Admin, Admin, Hospital).
+
+This version includes **blockchain integration** for enhanced security and verification using Ethereum smart contracts.
+
+## Features
+
+- **Role-based access control**: Super Admin, Admin, and Hospital roles
+- **Organ matching**: Automatic donor-patient matching based on organ compatibility, blood type, and location
+- **Database management**: SQLite database for storing donors, patients, hospitals, and matches
+- **Blockchain integration**: Ethereum smart contracts for hospital verification and authentication
+- **MetaMask authentication**: Secure login using MetaMask wallet
+
+## Tech Stack
+
+- **Backend**: Python (Flask), SQLite via SQLAlchemy
+- **Frontend**: HTML, CSS, JavaScript
+- **Blockchain**: Ethereum smart contracts (Solidity), Web3.js, Web3.py
+- **Authentication**: MetaMask wallet integration
+- **Deployment**: Docker, Vercel
 
 ## Project Structure
 
 ```
-├── client/                 # Frontend files
-│   ├── static/            # CSS, JS, images
+.
+├── server/                 # Backend Flask application
+│   ├── app.py             # Main application file
+│   ├── blockchain_service.py # Blockchain integration service
+│   ├── OrganChain.sol     # Solidity smart contract
+│   ├── OrganChain_abi.json # Contract ABI
+│   └── requirements.txt   # Python dependencies
+├── client/                # Frontend templates and static files
 │   ├── templates/         # HTML templates
-│   ├── ui_demo.html       # UI demo page
-│   └── UI_DEMO_README.md  # UI documentation
-├── server/                # Backend files
-│   ├── app.py            # Flask application
-│   ├── database.db       # SQLite database
-│   ├── requirements.txt  # Python dependencies
-│   ├── create_gifs.py    # Utility scripts
-│   └── view_database.py  # Database viewer
-├── docker-compose.yml     # Docker Compose configuration
-├── Dockerfile            # Docker configuration
-└── README.md             # This file
+│   └── static/            # CSS, JavaScript, images
+├── contracts/             # Solidity smart contracts
+│   └── OrganChain.sol     # Main contract
+├── migrations/            # Truffle migrations
+│   └── 2_deploy_organchain.js # Deployment script
+├── truffle-config.js      # Truffle configuration
+├── deploy_contract.py     # Script to deploy smart contract
+└── requirements.txt       # Project dependencies
 ```
 
-## Features
+## Blockchain Integration
 
-- **Admin Panel**: Manage hospitals, view all donors/patients, track matches
-- **Hospital Dashboard**: Add donors/patients, view matches, manage records
-- **Organ Matching**: Automatic matching based on organ type and blood type
-- **FCFS System**: First-Come-First-Served matching with unique IDs
-- **Secure Authentication**: Role-based access (Admin/Hospital)
+This platform uses Ethereum smart contracts to verify hospital registrations and provide an additional layer of security.
 
-## Quick Start
+### Smart Contract Features
 
-### Using Docker Compose (Recommended)
+- Hospital registration and verification
+- Admin authorization management
+- Event logging for all critical operations
+- Immutable record of hospital information
 
-1. Clone the repository
-2. Run the application:
+### MetaMask Authentication
+
+Hospitals can connect their MetaMask wallet for blockchain verification:
+1. Click "Connect MetaMask" on the login page
+2. Approve the connection in MetaMask
+3. The wallet address will be used to verify hospital registration on the blockchain
+
+## Setup
+
+1. **Install dependencies**:
    ```bash
-   docker-compose up -d
-   ```
-3. Access the application at `http://localhost:5000`
-
-### Manual Setup
-
-1. **Backend Setup**:
-   ```bash
-   cd server
-   pip install -r requirements.txt
-   python app.py
+   pip install -r server/requirements.txt
+   npm install -g truffle
    ```
 
-2. **Access the application**:
-   - URL: `http://localhost:5000`
-   - Default Admin: `admin@gmail.com` / `1234`
+2. **Initialize the database**:
+   ```bash
+   python server/app.py
+   ```
 
-## Default Credentials
+3. **Start a local Ethereum node** (for development):
+   ```bash
+   # Using Ganache CLI
+   ganache-cli
+   
+   # Or using Hardhat
+   npx hardhat node
+   ```
 
-- **Admin**: 
-  - Email: `admin@gmail.com`
-  - Password: `1234`
+4. **Compile and deploy the smart contract using Truffle**:
+   ```bash
+   # Compile the contract
+   truffle compile
+   
+   # Deploy the contract
+   truffle migrate --network development
+   ```
+
+5. **Configure environment variables**:
+   Create a `.env` file in the project root with:
+   ```env
+   GANACHE_RPC=http://127.0.0.1:7545
+   PRIVATE_KEY=0xb7704b524c611ae9888dcf3331e7bd334be5c0e084203cdbacf55bc6ac61cf79
+   CONTRACT_JSON_PATH=./build/contracts/OrganChain.json
+   ```
+
+6. **Sync existing matches to blockchain** (optional):
+   ```bash
+   python server/sync_matches_to_blockchain.py
+   ```
+
+7. **Run the application**:
+   ```bash
+   python server/app.py
+   ```
 
 ## API Endpoints
 
-### Authentication
-- `GET/POST /login` - Login page
-- `GET /logout` - Logout
+- `GET /api/matches` - Get all matches from blockchain
+- `POST /api/matches` - Add a new match to blockchain
 
-### Admin Routes
-- `GET /manage_hospitals` - Manage hospitals
-- `GET /admin_donors` - View all donors
-- `GET /admin_patients` - View all patients
-- `GET /admin_matches` - View all matches
-- `GET/POST /add_hospital` - Add new hospital
+## Default Accounts
 
-### Hospital Routes
-- `GET /hospital_dashboard` - Hospital dashboard
-- `GET /hospital_donors` - View hospital donors
-- `GET /hospital_patients` - View hospital patients
-- `GET /hospital_matches` - View hospital matches
-- `GET/POST /add_donor` - Add new donor
-- `GET/POST /add_patient` - Add new patient
+- **Admin**: admin@gmail.com / 1234
 
-### Matching
-- `GET /matches` - View and process matches
-- `GET /match_records` - View match history
+## Security
 
-## Database Schema
-
-- **admin**: Admin users
-- **hospital**: Hospital information
-- **donor**: Donor records with unique IDs
-- **patient**: Patient records with unique IDs
-- **match_record**: Successful matches
+- Passwords are stored securely
+- MetaMask integration provides wallet-based authentication
+- Blockchain verification ensures hospital authenticity
+- Role-based access control limits system access
 
 ## Deployment
 
-### Production Deployment
-
-1. **Using Docker**:
-   ```bash
-   docker-compose -f docker-compose.yml up -d
-   ```
-
-2. **Environment Variables**:
-   - `FLASK_ENV=production`
-   - `FLASK_APP=app.py`
-
-3. **Database**: The SQLite database is persisted in a volume
-
-### Cloud Deployment
-
-The application is ready for deployment on:
-- AWS ECS/Fargate
-- Google Cloud Run
-- Azure Container Instances
-- Heroku
-- DigitalOcean App Platform
-
-## Development
-
-### Adding New Features
-
-1. Backend changes go in `server/`
-2. Frontend changes go in `client/`
-3. Update templates in `client/templates/`
-4. Update static files in `client/static/`
-
-### Database Management
-
-- View database: `python server/view_database.py`
-- Database file: `server/database.db`
-
-## Security Notes
-
-- Change default admin credentials in production
-- Use environment variables for sensitive data
-- Consider using PostgreSQL for production
-- Implement proper session management
-- Add HTTPS in production
-
-## Support
-
-For issues or questions, please check the documentation or create an issue in the repository.
+The application can be deployed using Docker or traditional hosting services. For blockchain features, you'll need to connect to an Ethereum network (mainnet, testnet, or local node).

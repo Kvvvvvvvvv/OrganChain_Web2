@@ -53,8 +53,99 @@
             </tbody>
         </table>
     </div>
+    
+    <!-- Blockchain Matches Section -->
+    <div id="blockchain-matches-section" style="margin-top: 40px; display: none;">
+        <h2>Blockchain Match Records</h2>
+        <div class="table-container">
+            <table id="blockchain-matches-table">
+                <thead>
+                    <tr>
+                        <th>Donor Name</th>
+                        <th>Donor Organ</th>
+                        <th>Donor Blood Type</th>
+                        <th>Donor Hospital</th>
+                        <th>Patient Name</th>
+                        <th>Patient Organ</th>
+                        <th>Patient Blood Type</th>
+                        <th>Patient Hospital</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="blockchain-matches-body">
+                    <!-- Blockchain matches will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
     <br>
     <a href="/matches" class="btn-primary">Run New Match</a>
 </div>
+
+<script>
+// Function to load matches from blockchain
+async function loadBlockchainMatches() {
+    try {
+        const res = await fetch('/api/matches');
+        const json = await res.json();
+        if (json.ok) {
+            const matches = json.matches;
+            const tbody = document.getElementById('blockchain-matches-body');
+            
+            // Clear existing content
+            tbody.innerHTML = '';
+            
+            // Show the blockchain section
+            document.getElementById('blockchain-matches-section').style.display = 'block';
+            
+            // Add matches to table
+            matches.forEach(match => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${match.donorName}</td>
+                    <td>${match.donorOrgan}</td>
+                    <td>${match.donorBloodType}</td>
+                    <td>${match.donorHospital}</td>
+                    <td>${match.patientName}</td>
+                    <td>${match.patientOrgan}</td>
+                    <td>${match.patientBloodType}</td>
+                    <td>${match.patientHospital}</td>
+                    <td>${match.date}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            
+            if (matches.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center;">No matches found on blockchain</td></tr>';
+            }
+        } else {
+            console.error('Error loading blockchain matches:', json.error);
+        }
+    } catch (error) {
+        console.error('Error fetching blockchain matches:', error);
+    }
+}
+
+// Load blockchain matches when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadBlockchainMatches();
+});
+
+// Function to add a match to blockchain (for testing)
+async function addMatchToBlockchain(matchObj) {
+    try {
+        const res = await fetch('/api/matches', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(matchObj)
+        });
+        return await res.json();
+    } catch (error) {
+        console.error('Error adding match to blockchain:', error);
+        return {ok: false, error: error.message};
+    }
+}
+</script>
 </body>
 </html>

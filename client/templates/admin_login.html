@@ -22,20 +22,103 @@
 <div class="container">
     <h2>Login</h2>
     {% if message %}
-    <div class="alert alert-error" style="text-align:center;">{{ message }}</div>
+    <div class="alert alert-error">{{ message }}</div>
     {% endif %}
-    <form method="POST">
-        <label>Role</label>
-        <select name="role">
-            <option value="admin">Admin</option>
-            <option value="hospital">Hospital</option>
-        </select>
-        <label>Email</label>
-        <input type="text" name="email" required>
-        <label>Password</label>
-        <input type="password" name="password" required>
-        <button type="submit">Login</button>
+    
+    <!-- MetaMask Connection Button -->
+    <div id="metamask-section" style="margin-bottom: 30px; text-align: center;">
+        <button id="connectWallet" class="btn btn-primary" style="display: none; width: auto;">Connect MetaMask</button>
+        <div id="walletStatus" style="margin-top: 15px;"></div>
+    </div>
+    
+    <form method="POST" id="loginForm">
+        <div class="form-group">
+            <label>Role</label>
+            <select name="role" id="role">
+                <option value="admin">Admin</option>
+                <option value="hospital">Hospital</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Email</label>
+            <input type="text" name="email" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" required>
+        </div>
+        
+        <input type="hidden" name="wallet_address" id="wallet_address">
+        <button type="submit" class="btn btn-primary">Login</button>
     </form>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+<script>
+    let web3;
+    let userAccount;
+    
+    // Check if MetaMask is installed
+    window.addEventListener('load', async () => {
+        const connectButton = document.getElementById('connectWallet');
+        const walletStatus = document.getElementById('walletStatus');
+        
+        if (window.ethereum) {
+            connectButton.style.display = 'inline-block';
+            connectButton.addEventListener('click', connectWallet);
+        } else {
+            walletStatus.innerHTML = '<p style="color: red;">MetaMask not detected. Please install MetaMask to use blockchain features.</p>';
+        }
+    });
+    
+    async function connectWallet() {
+        const walletStatus = document.getElementById('walletStatus');
+        const connectButton = document.getElementById('connectWallet');
+        const walletAddressInput = document.getElementById('wallet_address');
+        const roleSelect = document.getElementById('role');
+        
+        try {
+            // Request account access
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            userAccount = accounts[0];
+            
+            // Initialize web3
+            web3 = new Web3(window.ethereum);
+            
+            // Update UI
+            walletStatus.innerHTML = `<p style="color: green;">Connected: ${userAccount.substring(0, 6)}...${userAccount.substring(38)}</p>`;
+            connectButton.textContent = 'Wallet Connected';
+            connectButton.disabled = true;
+            walletAddressInput.value = userAccount;
+            
+            // Show additional validation for hospital role
+            if (roleSelect.value === 'hospital') {
+                walletStatus.innerHTML += '<p>Verifying hospital registration on blockchain...</p>';
+                // In a real implementation, you would call your smart contract here
+                // to verify the hospital is registered
+            }
+        } catch (error) {
+            console.error("Could not connect to MetaMask", error);
+            walletStatus.innerHTML = '<p style="color: red;">Failed to connect to MetaMask</p>';
+        }
+    }
+    
+    // Update wallet status when role changes
+    document.getElementById('role').addEventListener('change', function() {
+        const role = this.value;
+        const walletStatus = document.getElementById('walletStatus');
+        
+        if (role === 'hospital' && userAccount) {
+            walletStatus.innerHTML = `<p style="color: green;">Connected: ${userAccount.substring(0, 6)}...${userAccount.substring(38)}</p>
+                                      <p>Hospital verification required for blockchain validation</p>`;
+        } else if (role === 'hospital' && !userAccount) {
+            walletStatus.innerHTML = '<p style="color: orange;">Please connect MetaMask for hospital login</p>';
+        } else {
+            walletStatus.innerHTML = '';
+        }
+    });
+</script>
 </body>
 </html>
