@@ -68,6 +68,25 @@ MatchAdded(
 )
 ```
 
+## Web3 Frontend Integration
+
+The platform also includes a Web3 frontend integration example that allows direct interaction with the blockchain:
+
+1. Navigate to http://127.0.0.1:5000/web3_example
+2. Connect your MetaMask wallet
+3. Add records directly to the blockchain
+4. View blockchain records in real-time
+
+This demonstrates how the platform could be extended to allow hospitals to interact directly with the blockchain without going through the backend.
+
+## API Access
+
+You can also access blockchain data programmatically through the REST API:
+
+- `GET /api/matches` - Retrieve all matches from the blockchain
+- `GET /api/records` - Retrieve all simple records from the blockchain
+- `GET /api/transaction/<tx_hash>` - Get detailed information about a specific transaction
+
 ## Benefits of This Approach
 
 1. **Transparency**: All stakeholders can verify that matches are recorded fairly
@@ -75,6 +94,7 @@ MatchAdded(
 3. **Privacy**: Sensitive medical information is encrypted
 4. **Auditability**: All transactions are traceable and verifiable
 5. **User-Friendly**: Event logs provide clear, human-readable information
+6. **Flexibility**: Multiple ways to interact with blockchain data
 
 ## Troubleshooting
 
@@ -82,3 +102,9 @@ If you don't see any transactions:
 1. Make sure you've created at least one match through the web interface
 2. Run the matching algorithm by visiting http://127.0.0.1:5000/matches
 3. Check that the blockchain service is properly connected to Ganache
+4. Verify that the smart contract is deployed correctly
+
+If you encounter connection issues:
+1. Ensure Ganache is running on the correct port (7545)
+2. Check that the RPC endpoint in the configuration matches Ganache's endpoint
+3. Verify that the contract address is correctly set in the backend

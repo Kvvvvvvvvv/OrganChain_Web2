@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 Blockchain Integration Example</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Web3 Blockchain Integration Example</h1>
+        
+        <div class="card">
+            <h2>Connect to MetaMask</h2>
+            <button id="connect-button" class="btn">Connect Wallet</button>
+            <p id="account-status">Not connected</p>
+        </div>
+        
+        <div class="card">
+            <h2>Add Organ Record</h2>
+            <form id="record-form">
+                <div class="form-group">
+                    <label for="donor-id">Donor ID:</label>
+                    <input type="text" id="donor-id" required>
+                </div>
+                <div class="form-group">
+                    <label for="organ-type">Organ Type:</label>
+                    <input type="text" id="organ-type" required>
+                </div>
+                <div class="form-group">
+                    <label for="hospital">Hospital:</label>
+                    <input type="text" id="hospital" required>
+                </div>
+                <div class="form-group">
+                    <label for="receiver-id">Receiver ID:</label>
+                    <input type="text" id="receiver-id" required>
+                </div>
+                <button type="submit" class="btn" id="submit-record">Add Record to Blockchain</button>
+            </form>
+            <p id="transaction-status"></p>
+        </div>
+        
+        <div class="card">
+            <h2>View Blockchain Records</h2>
+            <button id="view-records" class="btn">Load Records</button>
+            <div id="records-container">
+                <p>Click "Load Records" to view blockchain data</p>
+            </div>
+        </div>
+        
+        <a href="/" class="btn">Back to Home</a>
+    </div>
+
+    <script>
+        let web3;
+        let contract;
+        let userAccount;
+        
+        // Contract ABI (simplified version)
+        const contractABI = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "donorId",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "organType",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "hospital",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "receiverId",
+                        "type": "string"
+                    }
+                ],
+                "name": "addRecord",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "donorId",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "organType",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "hospital",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "receiverId",
+                        "type": "string"
+                    }
+                ],
+                "name": "OrganRegistered",
+                "type": "event"
+            },
+            {
+                "inputs": [],
+                "name": "getAllRecords",
+                "outputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "string",
+                                "name": "donorId",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "organType",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "hospital",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "receiverId",
+                                "type": "string"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "timestamp",
+                                "type": "uint256"
+                            }
+                        ],
+                        "internalType": "struct OrganChain.Record[]",
+                        "name": "",
+                        "type": "tuple[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+        
+        // Contract address (this would need to be set to your actual deployed contract address)
+        const contractAddress = "0xYourDeployedContractAddress";
+        
+        // Connect to MetaMask
+        document.getElementById('connect-button').addEventListener('click', async () => {
+            if (window.ethereum) {
+                try {
+                    // Request account access
+                    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    userAccount = accounts[0];
+                    
+                    // Initialize Web3
+                    web3 = new Web3(window.ethereum);
+                    
+                    // Initialize contract
+                    contract = new web3.eth.Contract(contractABI, contractAddress);
+                    
+                    // Update UI
+                    document.getElementById('account-status').textContent = `Connected: ${userAccount}`;
+                    document.getElementById('connect-button').disabled = true;
+                    
+                    console.log('Connected to MetaMask');
+                } catch (error) {
+                    console.error('User denied account access or error occurred:', error);
+                    document.getElementById('account-status').textContent = 'Connection failed';
+                }
+            } else {
+                alert('Please install MetaMask to use this feature!');
+            }
+        });
+        
+        // Add record to blockchain
+        document.getElementById('record-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!contract || !userAccount) {
+                alert('Please connect your wallet first!');
+                return;
+            }
+            
+            const donorId = document.getElementById('donor-id').value;
+            const organType = document.getElementById('organ-type').value;
+            const hospital = document.getElementById('hospital').value;
+            const receiverId = document.getElementById('receiver-id').value;
+            
+            try {
+                document.getElementById('transaction-status').textContent = 'Processing transaction...';
+                
+                // Send transaction
+                const receipt = await contract.methods.addRecord(donorId, organType, hospital, receiverId)
+                    .send({ from: userAccount });
+                
+                document.getElementById('transaction-status').innerHTML = `
+                    Record added successfully!<br>
+                    Transaction Hash: ${receipt.transactionHash}<br>
+                    Block Number: ${receipt.blockNumber}
+                `;
+                
+                // Clear form
+                document.getElementById('record-form').reset();
+            } catch (error) {
+                console.error('Error adding record:', error);
+                document.getElementById('transaction-status').textContent = 'Error: ' + error.message;
+            }
+        });
+        
+        // View records from blockchain
+        document.getElementById('view-records').addEventListener('click', async () => {
+            if (!contract) {
+                alert('Please connect your wallet first!');
+                return;
+            }
+            
+            try {
+                document.getElementById('records-container').innerHTML = '<p>Loading records...</p>';
+                
+                // Get all records
+                const records = await contract.methods.getAllRecords().call();
+                
+                if (records.length === 0) {
+                    document.getElementById('records-container').innerHTML = '<p>No records found on blockchain.</p>';
+                    return;
+                }
+                
+                let html = '<div class="records-list">';
+                records.forEach((record, index) => {
+                    const date = new Date(record.timestamp * 1000).toLocaleString();
+                    html += `
+                        <div class="record-item">
+                            <h3>Record #${index + 1}</h3>
+                            <p><strong>Donor ID:</strong> ${record.donorId}</p>
+                            <p><strong>Organ Type:</strong> ${record.organType}</p>
+                            <p><strong>Hospital:</strong> ${record.hospital}</p>
+                            <p><strong>Receiver ID:</strong> ${record.receiverId}</p>
+                            <p><strong>Date:</strong> ${date}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                
+                document.getElementById('records-container').innerHTML = html;
+            } catch (error) {
+                console.error('Error fetching records:', error);
+                document.getElementById('records-container').innerHTML = '<p>Error loading records: ' + error.message + '</p>';
+            }
+        });
+    </script>
+    
+    <style>
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .record-item, .match-item {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+        }
+        
+        .records-list, .matches-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</body>
+</html>

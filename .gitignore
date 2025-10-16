@@ -39,3 +39,40 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Sensitive files
+secret.key
+*.key
+*.pem
+*.cert
+*.crt
+private_key*
+*_private.*
+*_private_*
+
+# Compiled contract artifacts (except in build/)
+/build/contracts/*.json
+!/build/contracts/OrganChain.json
+
+# Server sensitive files
+server/.env
+server/database.db
+server/secret.key
+server/private_key*
+server/*_private.*
+
+# Admin credentials
+admin_password*
+admin_secret*
+*_admin.*
+*_admin_*
+
+# Ignore all .env files in any directory
+**/.env
+*/.env
+.env.*
+
+# Ignore all key files in any directory
+**/*.key
+*/.key
+.key.*

@@ -21,9 +21,18 @@ contract OrganChain {
         string date;
     }
     
+    struct Record {
+        string donorId;
+        string organType;
+        string hospital;
+        string receiverId;
+        uint256 timestamp;
+    }
+    
     mapping(address => Hospital) public hospitals;
     mapping(address => bool) public authorizedAdmins;
     Match[] public matches;
+    Record[] public records;
     
     address public owner;
     
@@ -44,6 +53,7 @@ contract OrganChain {
         string date,
         string details
     );
+    event OrganRegistered(string donorId, string organType, string hospital, string receiverId);
     
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can perform this action");
@@ -151,6 +161,16 @@ contract OrganChain {
     
     function getMatchesCount() public view returns (uint256) {
         return matches.length;
+    }
+    
+    // Simple record function as per the example
+    function addRecord(string memory donorId, string memory organType, string memory hospital, string memory receiverId) public {
+        records.push(Record(donorId, organType, hospital, receiverId, block.timestamp));
+        emit OrganRegistered(donorId, organType, hospital, receiverId);
+    }
+
+    function getAllRecords() public view returns (Record[] memory) {
+        return records;
     }
     
     // Helper function to convert uint to string

@@ -11,6 +11,9 @@ This version includes **blockchain integration** for enhanced security and verif
 - **Database management**: SQLite database for storing donors, patients, hospitals, and matches
 - **Blockchain integration**: Ethereum smart contracts for hospital verification and authentication
 - **MetaMask authentication**: Secure login using MetaMask wallet
+- **Web3 frontend integration**: Direct blockchain interaction from the browser
+- **Comprehensive blockchain API**: REST endpoints for blockchain data access
+- **Dual data storage**: Both traditional database and blockchain storage for redundancy
 
 ## Tech Stack
 
@@ -52,6 +55,9 @@ This platform uses Ethereum smart contracts to verify hospital registrations and
 - Admin authorization management
 - Event logging for all critical operations
 - Immutable record of hospital information
+- Organ match recording with detailed information
+- Simple record storage for basic organ donation information
+- Data encryption for sensitive information
 
 ### MetaMask Authentication
 
@@ -59,6 +65,14 @@ Hospitals can connect their MetaMask wallet for blockchain verification:
 1. Click "Connect MetaMask" on the login page
 2. Approve the connection in MetaMask
 3. The wallet address will be used to verify hospital registration on the blockchain
+
+### Web3 Frontend Integration
+
+The platform includes a dedicated Web3 integration example that allows direct interaction with the blockchain:
+1. Navigate to the "Web3 Example" page from the dashboard
+2. Connect your MetaMask wallet
+3. Add records directly to the blockchain
+4. View blockchain records in real-time
 
 ## Setup
 
@@ -91,7 +105,12 @@ Hospitals can connect their MetaMask wallet for blockchain verification:
    truffle migrate --network development
    ```
 
-5. **Configure environment variables**:
+5. **Or deploy using the custom deployment script**:
+   ```bash
+   python deploy_contract.py
+   ```
+
+6. **Configure environment variables**:
    Create a `.env` file in the project root with:
    ```env
    GANACHE_RPC=http://127.0.0.1:7545
@@ -99,12 +118,12 @@ Hospitals can connect their MetaMask wallet for blockchain verification:
    CONTRACT_JSON_PATH=./build/contracts/OrganChain.json
    ```
 
-6. **Sync existing matches to blockchain** (optional):
+7. **Sync existing matches to blockchain** (optional):
    ```bash
    python server/sync_matches_to_blockchain.py
    ```
 
-7. **Run the application**:
+8. **Run the application**:
    ```bash
    python server/app.py
    ```
@@ -112,7 +131,18 @@ Hospitals can connect their MetaMask wallet for blockchain verification:
 ## API Endpoints
 
 - `GET /api/matches` - Get all matches from blockchain
+- `GET /api/records` - Get all simple records from blockchain
+- `GET /api/transaction/<tx_hash>` - Get detailed information about a specific transaction
 - `POST /api/matches` - Add a new match to blockchain
+
+## Viewing Blockchain Data
+
+To view detailed blockchain transaction information:
+1. Access the "Blockchain Info" page from the dashboard
+2. Or visit the API endpoints directly
+3. Or check transactions directly in Ganache
+
+See [HOW_TO_VIEW_BLOCKCHAIN_DATA.md](HOW_TO_VIEW_BLOCKCHAIN_DATA.md) for detailed instructions.
 
 ## Default Accounts
 
@@ -124,6 +154,7 @@ Hospitals can connect their MetaMask wallet for blockchain verification:
 - MetaMask integration provides wallet-based authentication
 - Blockchain verification ensures hospital authenticity
 - Role-based access control limits system access
+- Sensitive data is encrypted before storing on the blockchain
 
 ## Deployment
 

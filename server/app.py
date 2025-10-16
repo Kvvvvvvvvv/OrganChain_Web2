@@ -2,20 +2,33 @@ from flask import Flask, render_template, request, redirect, session, jsonify
 import sqlite3
 import uuid
 import datetime
-from blockchain_service import add_match_to_chain, get_all_matches
 import os
+import sys
+
+# Add the project root to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+# Import the blockchain service
+from blockchain_layer import SimpleBlockchain, load_key, generate_key
+import json
 
 app = Flask(__name__, 
             template_folder='../client/templates',
             static_folder='../client/static')
 app.secret_key = "secret123"
 
+# --- Initialize blockchain ---
+if not os.path.exists("secret.key"):
+    key = generate_key()
+else:
+    key = load_key()
+
+blockchain = SimpleBlockchain(key)
+
 # Use the database file in the same directory as this script
 DB = os.path.join(os.path.dirname(__file__), "database.db")
 
-# Blockchain integration will be handled by the new blockchain_service module
-BLOCKCHAIN_CONTRACT_ADDRESS = None
-print("Blockchain integration ready. Will use new blockchain_service module.")
+# Print blockchain status
 
 def init_db():
     conn = sqlite3.connect(DB)
@@ -142,8 +155,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-# Blockchain connection handled by new blockchain_service module
-
 # Deduplicate historical match records and fix statuses
 def dedupe_matches():
     conn = sqlite3.connect(DB)
@@ -186,6 +197,117 @@ def dedupe_matches():
 # Initialize DB
 init_db()
 
+# Function to sync all database records to blockchain
+def sync_all_to_blockchain():
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    
+    # Sync hospitals
+    c.execute("SELECT id, name, email, location FROM hospital")
+    hospitals = c.fetchall()
+    for hospital in hospitals:
+        hospital_id, name, email, location = hospital
+        try:
+            block = blockchain.add_transaction(
+                donor_id=f"hospital_{hospital_id}",
+                organ_type="hospital_registration",
+                hospital=name,
+                receiver_id=f"hospital_{hospital_id}"
+            )
+        except Exception as e:
+            print(f"Error adding hospital {hospital_id} to blockchain: {e}")
+    
+    # Sync donors
+    c.execute("SELECT id, unique_id, name, organ, blood_type, hospital_id FROM donor")
+    donors = c.fetchall()
+    for donor in donors:
+        donor_id, unique_id, name, organ, blood_type, hospital_id = donor
+        # Get hospital name
+        c.execute("SELECT name FROM hospital WHERE id = ?", (hospital_id,))
+        hospital_record = c.fetchone()
+        hospital_name = hospital_record[0] if hospital_record else "Unknown"
+        
+        try:
+            block = blockchain.add_transaction(
+                donor_id=unique_id,
+                organ_type=organ,
+                hospital=hospital_name,
+                receiver_id=f"donor_{donor_id}"
+            )
+        except Exception as e:
+            print(f"Error adding donor {donor_id} to blockchain: {e}")
+    
+    # Sync patients
+    c.execute("SELECT id, unique_id, name, organ, blood_type, hospital_id FROM patient")
+    patients = c.fetchall()
+    for patient in patients:
+        patient_id, unique_id, name, organ, blood_type, hospital_id = patient
+        # Get hospital name
+        c.execute("SELECT name FROM hospital WHERE id = ?", (hospital_id,))
+        hospital_record = c.fetchone()
+        hospital_name = hospital_record[0] if hospital_record else "Unknown"
+        
+        try:
+            block = blockchain.add_transaction(
+                donor_id=f"patient_{patient_id}",
+                organ_type=organ,
+                hospital=hospital_name,
+                receiver_id=unique_id
+            )
+        except Exception as e:
+            print(f"Error adding patient {patient_id} to blockchain: {e}")
+    
+    # Sync matches
+    c.execute("SELECT id, donor_id, patient_id, organ, match_date FROM match_record")
+    matches = c.fetchall()
+    for match in matches:
+        match_id, donor_id, patient_id, organ, match_date = match
+        # Get donor unique_id
+        c.execute("SELECT unique_id, hospital_id FROM donor WHERE id = ?", (donor_id,))
+        donor_record = c.fetchone()
+        donor_unique_id = donor_record[0] if donor_record else "Unknown"
+        donor_hospital_id = donor_record[1] if donor_record else None
+        
+        # Get patient unique_id
+        c.execute("SELECT unique_id, hospital_id FROM patient WHERE id = ?", (patient_id,))
+        patient_record = c.fetchone()
+        patient_unique_id = patient_record[0] if patient_record else "Unknown"
+        patient_hospital_id = patient_record[1] if patient_record else None
+        
+        # Get hospital names
+        donor_hospital_name = "Unknown"
+        patient_hospital_name = "Unknown"
+        
+        if donor_hospital_id:
+            c.execute("SELECT name FROM hospital WHERE id = ?", (donor_hospital_id,))
+            donor_hospital_record = c.fetchone()
+            donor_hospital_name = donor_hospital_record[0] if donor_hospital_record else "Unknown"
+            
+        if patient_hospital_id:
+            c.execute("SELECT name FROM hospital WHERE id = ?", (patient_hospital_id,))
+            patient_hospital_record = c.fetchone()
+            patient_hospital_name = patient_hospital_record[0] if patient_hospital_record else "Unknown"
+        
+        try:
+            block = blockchain.add_transaction(
+                donor_id=donor_unique_id,
+                organ_type=f"{organ}_match",
+                hospital=f"{donor_hospital_name}_to_{patient_hospital_name}",
+                receiver_id=patient_unique_id
+            )
+        except Exception as e:
+            print(f"Error adding match {match_id} to blockchain: {e}")
+    
+    conn.close()
+    
+    # Save blockchain to JSON file in the project root
+    try:
+        with open('../blockchain.json', 'w') as f:
+            json.dump(blockchain.get_chain(), f, indent=4)
+        print("Blockchain synced successfully!")
+    except Exception as e:
+        print(f"Error saving blockchain to file: {e}")
+
 # -------------------- ROUTES --------------------
 
 @app.route('/')
@@ -217,13 +339,19 @@ def login():
             if user:
                 # For hospital, check if they are registered on the blockchain
                 hospital_wallet = user[5] if len(user) > 5 else None
-                if hospital_wallet:
-                    # Check if hospital is registered on blockchain
-                    is_registered = blockchain_service.is_hospital_registered(hospital_wallet)
-                    if not is_registered:
-                        message = "Hospital not registered on blockchain"
-                        conn.close()
-                        return render_template('admin_login.html', message=message)
+                # Skip blockchain check as per user request
+                # if hospital_wallet and BLOCKCHAIN_AVAILABLE:
+                #     # Check if hospital is registered on blockchain
+                #     try:
+                #         from blockchain_service import is_hospital_registered
+                #         is_registered = is_hospital_registered(hospital_wallet)
+                #         if not is_registered:
+                #             message = "Hospital not registered on blockchain"
+                #             conn.close()
+                #             return render_template('admin_login.html', message=message)
+                #     except:
+                #         # If blockchain service fails, continue without checking
+                #         pass
                 
                 session['hospital'] = user[0]
                 session['hospital_name'] = user[1]
@@ -407,30 +535,23 @@ def add_hospital():
             c.execute("INSERT INTO hospital (name,email,location,password,wallet_address) VALUES (?,?,?,?,?)",
                       (name,email,location,password,wallet_address))
             conn.commit()
+            hospital_id = c.lastrowid
             conn.close()
             
-            # If wallet address is provided and blockchain is available, register hospital on blockchain
-            blockchain_success = False
-            if wallet_address and blockchain_service.is_connected() and BLOCKCHAIN_CONTRACT_ADDRESS:
-                try:
-                    # For demo purposes, we'll use a default private key
-                    # In production, you would use the admin's private key
-                    default_private_key = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"  # First Ganache account
-                    
-                    # Register hospital on blockchain
-                    receipt = blockchain_service.add_hospital_to_blockchain(
-                        default_private_key, name, email, location)
-                    
-                    if receipt:
-                        blockchain_success = True
-                        message = f"Hospital added successfully! Blockchain transaction: {receipt.transactionHash.hex()}"
-                    else:
-                        message = "Hospital added to database. Blockchain registration failed."
-                except Exception as e:
-                    print(f"Blockchain registration error: {e}")
-                    message = "Hospital added to database. Blockchain registration failed."
-            else:
-                message = "Hospital added successfully to database only (blockchain not available)."
+            # Add to blockchain
+            try:
+                block = blockchain.add_transaction(
+                    donor_id=f"hospital_{hospital_id}",
+                    organ_type="hospital_registration",
+                    hospital=name,
+                    receiver_id=f"hospital_{hospital_id}"
+                )
+                
+                # Save blockchain to JSON file
+                with open('../blockchain.json', 'w') as f:
+                    json.dump(blockchain.get_chain(), f, indent=4)
+            except Exception as e:
+                print(f"Error adding hospital to blockchain: {e}")
                 
         except sqlite3.IntegrityError:
             message = "A hospital with this email already exists."
@@ -534,7 +655,32 @@ def add_donor():
             unique_id = 'N/A'
         
         conn.commit()
+        donor_id = c.lastrowid
         conn.close()
+        
+        # Add to blockchain
+        try:
+            # Get hospital name
+            conn = sqlite3.connect(DB)
+            c = conn.cursor()
+            c.execute("SELECT name FROM hospital WHERE id = ?", (hospital_id,))
+            hospital_record = c.fetchone()
+            hospital_name = hospital_record[0] if hospital_record else "Unknown"
+            conn.close()
+            
+            block = blockchain.add_transaction(
+                donor_id=unique_id,
+                organ_type=organ,
+                hospital=hospital_name,
+                receiver_id=f"donor_{donor_id}"
+            )
+            
+            # Save blockchain to JSON file
+            with open('../blockchain.json', 'w') as f:
+                json.dump(blockchain.get_chain(), f, indent=4)
+        except Exception as e:
+            print(f"Error adding donor to blockchain: {e}")
+        
         return jsonify({'success': True, 'message': 'Donor added successfully!', 'unique_id': unique_id})
     
     return render_template('add_donor.html')
@@ -569,7 +715,32 @@ def add_patient():
             unique_id = 'N/A'
         
         conn.commit()
+        patient_id = c.lastrowid
         conn.close()
+        
+        # Add to blockchain
+        try:
+            # Get hospital name
+            conn = sqlite3.connect(DB)
+            c = conn.cursor()
+            c.execute("SELECT name FROM hospital WHERE id = ?", (hospital_id,))
+            hospital_record = c.fetchone()
+            hospital_name = hospital_record[0] if hospital_record else "Unknown"
+            conn.close()
+            
+            block = blockchain.add_transaction(
+                donor_id=f"patient_{patient_id}",
+                organ_type=organ,
+                hospital=hospital_name,
+                receiver_id=unique_id
+            )
+            
+            # Save blockchain to JSON file
+            with open('../blockchain.json', 'w') as f:
+                json.dump(blockchain.get_chain(), f, indent=4)
+        except Exception as e:
+            print(f"Error adding patient to blockchain: {e}")
+        
         return jsonify({'success': True, 'message': 'Patient added successfully!', 'unique_id': unique_id})
     
     return render_template('add_patient.html')
@@ -845,35 +1016,29 @@ def matches():
                 c.execute("INSERT INTO match_record (donor_id, patient_id, donor_hospital_id, patient_hospital_id, organ, blood_type) VALUES (?, ?, ?, ?, ?, ?)",
                           (donor_id, patient_id, donor_hosp_id, patient_hosp_id, organ, blood_type))
                 
-                # Also add match to blockchain
+                # Add to blockchain
                 try:
-                    # Get hospital names for blockchain record
-                    c.execute("SELECT name FROM hospital WHERE id=?", (donor_hosp_id,))
-                    donor_hospital_result = c.fetchone()
-                    donor_hospital_name = donor_hospital_result[0] if donor_hospital_result else "Unknown Hospital"
+                    # Get hospital names
+                    c.execute("SELECT name FROM hospital WHERE id = ?", (donor_hosp_id,))
+                    donor_hospital_record = c.fetchone()
+                    donor_hospital_name = donor_hospital_record[0] if donor_hospital_record else "Unknown"
                     
-                    c.execute("SELECT name FROM hospital WHERE id=?", (patient_hosp_id,))
-                    patient_hospital_result = c.fetchone()
-                    patient_hospital_name = patient_hospital_result[0] if patient_hospital_result else "Unknown Hospital"
+                    c.execute("SELECT name FROM hospital WHERE id = ?", (patient_hosp_id,))
+                    patient_hospital_record = c.fetchone()
+                    patient_hospital_name = patient_hospital_record[0] if patient_hospital_record else "Unknown"
                     
-                    # Create match object for blockchain
-                    match_data = {
-                        'donorName': donor_name,
-                        'donorAge': donor_age,
-                        'donorHospital': donor_hospital_name,
-                        'organ': organ,
-                        'bloodType': blood_type,
-                        'patientName': patient_name,
-                        'patientAge': patient_age,
-                        'patientHospital': patient_hospital_name,
-                        'date': datetime.datetime.now().strftime('%Y-%m-%d')
-                    }
+                    block = blockchain.add_transaction(
+                        donor_id=donor_unique_id,
+                        organ_type=f"{organ}_match",
+                        hospital=f"{donor_hospital_name}_to_{patient_hospital_name}",
+                        receiver_id=patient_unique_id
+                    )
                     
-                    # Add to blockchain
-                    receipt = add_match_to_chain(match_data)
-                    print(f"Match added to blockchain. Transaction hash: {receipt.transactionHash.hex()}")
+                    # Save blockchain to JSON file
+                    with open('../blockchain.json', 'w') as f:
+                        json.dump(blockchain.get_chain(), f, indent=4)
                 except Exception as e:
-                    print(f"Failed to add match to blockchain: {e}")
+                    print(f"Error adding match to blockchain: {e}")
                 
                 matched_donor_ids.add(donor_id)
                 matched_patient_ids.add(patient_id)
@@ -911,35 +1076,29 @@ def matches():
             c.execute("INSERT INTO match_record (donor_id, patient_id, donor_hospital_id, patient_hospital_id, organ, blood_type) VALUES (?, ?, ?, ?, ?, ?)",
                       (donor_id, patient_id, donor_hosp_id, patient_hosp_id, organ, blood))
             
-            # Also add match to blockchain
+            # Add to blockchain
             try:
-                # Get hospital names for blockchain record
-                c.execute("SELECT name FROM hospital WHERE id=?", (donor_hosp_id,))
-                donor_hospital_result = c.fetchone()
-                donor_hospital_name = donor_hospital_result[0] if donor_hospital_result else "Unknown Hospital"
+                # Get hospital names
+                c.execute("SELECT name FROM hospital WHERE id = ?", (donor_hosp_id,))
+                donor_hospital_record = c.fetchone()
+                donor_hospital_name = donor_hospital_record[0] if donor_hospital_record else "Unknown"
                 
-                c.execute("SELECT name FROM hospital WHERE id=?", (patient_hosp_id,))
-                patient_hospital_result = c.fetchone()
-                patient_hospital_name = patient_hospital_result[0] if patient_hospital_result else "Unknown Hospital"
+                c.execute("SELECT name FROM hospital WHERE id = ?", (patient_hosp_id,))
+                patient_hospital_record = c.fetchone()
+                patient_hospital_name = patient_hospital_record[0] if patient_hospital_record else "Unknown"
                 
-                # Create match object for blockchain
-                match_data = {
-                    'donorName': donor_name,
-                    'donorAge': donor_age,
-                    'donorHospital': donor_hospital_name,
-                    'organ': organ,
-                    'bloodType': blood,
-                    'patientName': patient_name,
-                    'patientAge': patient_age,
-                    'patientHospital': patient_hospital_name,
-                    'date': datetime.datetime.now().strftime('%Y-%m-%d')
-                }
+                block = blockchain.add_transaction(
+                    donor_id=f"donor_{donor_id}",
+                    organ_type=f"{organ}_match",
+                    hospital=f"{donor_hospital_name}_to_{patient_hospital_name}",
+                    receiver_id=f"patient_{patient_id}"
+                )
                 
-                # Add to blockchain
-                receipt = add_match_to_chain(match_data)
-                print(f"Match added to blockchain. Transaction hash: {receipt.transactionHash.hex()}")
+                # Save blockchain to JSON file
+                with open('../blockchain.json', 'w') as f:
+                    json.dump(blockchain.get_chain(), f, indent=4)
             except Exception as e:
-                print(f"Failed to add match to blockchain: {e}")
+                print(f"Error adding match to blockchain: {e}")
             
             matched_donor_ids.add(donor_id)
             matched_patient_ids.add(patient_id)
@@ -1018,31 +1177,33 @@ def match_records():
     conn.close()
     return render_template('match_records.html', matches=matches)
 
-# ----------------- BLOCKCHAIN INFO -----------------
-@app.route('/blockchain_info')
-def blockchain_info():
-    return render_template('blockchain_info.html')
+@app.route('/add_to_chain', methods=['POST'])
+def add_to_chain():
+    data = request.get_json()
+    donor = data.get('donor')
+    organ = data.get('organ')
+    hospital = data.get('hospital')
+    receiver = data.get('receiver')
 
-# ----------------- BLOCKCHAIN API -----------------
-@app.route("/api/matches", methods=["GET"])
-def api_get_matches():
-    try:
-        matches = get_all_matches()
-        return jsonify({"ok": True, "matches": matches})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
+    block = blockchain.add_transaction(donor, organ, hospital, receiver)
 
-@app.route("/api/transaction/<tx_hash>", methods=["GET"])
-def api_get_transaction(tx_hash):
+    # Save blockchain to JSON file in the project root
+    with open('../blockchain.json', 'w') as f:
+        json.dump(blockchain.get_chain(), f, indent=4)
+
+    return {'message': 'Record added to blockchain', 'block_index': block['index']}
+
+@app.route('/chain')
+def view_chain():
+    return jsonify(blockchain.get_chain(decrypt=True))
+
+@app.route('/sync_to_blockchain')
+def sync_to_blockchain():
     try:
-        from blockchain_service import get_transaction_details
-        details = get_transaction_details(tx_hash)
-        if details:
-            return jsonify({"ok": True, "transaction": details})
-        else:
-            return jsonify({"ok": False, "error": "Transaction not found"}), 404
+        sync_all_to_blockchain()
+        return jsonify({"message": "Successfully synced all database records to blockchain"})
     except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
+        return jsonify({"error": f"Failed to sync to blockchain: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
