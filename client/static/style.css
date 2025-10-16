@@ -351,6 +351,7 @@ input[type=text],
 input[type=password], 
 input[type=number], 
 input[type=email],
+input[type=file],
 select {
     width: 100%;
     padding: 24px 28px;
@@ -375,6 +376,24 @@ input:focus, select:focus {
     transform: translateY(-2px);
 }
 
+input[type=file] {
+    padding: 20px 28px;
+    border: 2px dashed var(--border-color);
+    background: var(--bg-secondary);
+    cursor: pointer;
+    transition: all var(--animation-speed) var(--animation-curve);
+}
+
+input[type=file]:hover {
+    border-color: #3b82f6;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-medium);
+}
+
+input[type=file]:focus {
+    border-style: solid;
+}
+
 input::placeholder {
     color: var(--text-muted);
     font-weight: 400;
@@ -384,6 +403,82 @@ input::placeholder {
 input:focus::placeholder {
     color: var(--text-muted);
     transform: translateX(4px);
+}
+
+/* File Upload Styling */
+.file-upload-container {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.file-upload-label {
+    display: block;
+    margin-bottom: 12px;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text-primary);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.file-upload-input {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.file-upload-text {
+    flex: 1;
+    padding: 24px 28px;
+    background: var(--bg-secondary);
+    border: 2px dashed var(--border-color);
+    border-radius: 20px;
+    color: var(--text-muted);
+    font-size: 16px;
+    transition: all var(--animation-speed) var(--animation-curve);
+}
+
+.file-upload-input:hover .file-upload-text {
+    border-color: #3b82f6;
+    background: var(--bg-primary);
+    box-shadow: var(--shadow-medium);
+}
+
+.file-upload-input input[type="file"] {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.file-upload-button {
+    padding: 24px 32px;
+    background: var(--primary-gradient);
+    color: var(--text-inverse);
+    border: none;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all var(--animation-speed) var(--animation-curve);
+    box-shadow: var(--shadow-soft);
+}
+
+.file-upload-button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
+}
+
+.file-upload-instructions {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-style: italic;
 }
 
 /* High Contrast Buttons */
@@ -463,6 +558,68 @@ button:active, .btn:active {
 .btn-danger:hover {
     transform: translateY(-4px) scale(1.02) !important;
     box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3) !important;
+}
+
+/* PDF Button */
+.btn-pdf {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 16px !important;
+    font-size: 14px !important;
+    width: auto !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+}
+
+.btn-pdf:hover {
+    transform: translateY(-2px) scale(1.05) !important;
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3) !important;
+}
+
+.btn-pdf i {
+    margin-right: 8px;
+}
+
+/* Badge Styles */
+.blood-type-badge {
+    background: var(--secondary-gradient);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.organ-badge {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.registration-date {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.unique-id-cell {
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    background: var(--bg-tertiary);
+    padding: 4px 8px;
+    border-radius: 6px;
+    color: var(--text-muted);
+}
+
+.hospital-badge {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 /* Enhanced Tables */
@@ -728,6 +885,215 @@ tbody tr:last-child td {
     color: var(--text-secondary);
     margin: 8px 0 0 0;
     font-size: 16px;
+}
+
+/* PDF Viewer */
+.pdf-viewer-container {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 24px;
+    padding: 0;
+    box-shadow: var(--shadow-medium);
+    overflow: hidden;
+    margin-bottom: 32px;
+}
+
+.pdf-viewer-header {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    padding: 24px;
+    text-align: center;
+}
+
+.pdf-viewer-header h2 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.pdf-viewer-header p {
+    margin: 8px 0 0 0;
+    opacity: 0.9;
+}
+
+.pdf-viewer-iframe {
+    width: 100%;
+    height: 600px;
+    border: none;
+}
+
+/* PDF Preview/Thumbnail */
+.pdf-preview {
+    display: inline-block;
+    position: relative;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border-radius: 8px;
+    text-align: center;
+    line-height: 40px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all var(--animation-speed) var(--animation-curve);
+}
+
+.pdf-preview:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-medium);
+}
+
+.pdf-preview i {
+    vertical-align: middle;
+}
+
+.pdf-preview-text {
+    display: inline-block;
+    margin-left: 8px;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.pdf-preview-text:hover {
+    color: #ef4444;
+}
+
+.pdf-download-btn {
+    display: inline-block;
+    position: relative;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    border-radius: 8px;
+    text-align: center;
+    line-height: 40px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all var(--animation-speed) var(--animation-curve);
+    text-decoration: none;
+    margin-left: 8px;
+}
+
+.pdf-download-btn:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-medium);
+}
+
+.pdf-download-text {
+    display: inline-block;
+    margin-left: 8px;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-decoration: underline;
+}
+
+.pdf-download-text a {
+    color: var(--text-primary);
+    text-decoration: underline;
+}
+
+.pdf-download-text a:hover {
+    color: #3b82f6;
+}
+
+.pdf-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.no-document {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 14px;
+}
+
+/* PDF Modal */
+.pdf-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+}
+
+.pdf-modal-content {
+    background: var(--bg-primary);
+    border-radius: 16px;
+    box-shadow: var(--shadow-strong);
+    max-width: 90%;
+    max-height: 90%;
+    overflow: hidden;
+}
+
+.pdf-modal-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pdf-modal-header h3 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.pdf-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdf-modal-body {
+    padding: 0;
+}
+
+.pdf-modal-body iframe {
+    width: 100%;
+    height: 70vh;
+    border: none;
+}
+
+.pdf-modal-footer {
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+.pdf-modal-download {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.pdf-modal-download:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-medium);
 }
 
 /* Grid Layouts */
@@ -1187,6 +1553,79 @@ tbody tr:last-child td {
     margin: 0;
 }
 
+/* Statistics Header */
+.stats-header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+    width: 100%;
+}
+
+.stat-card {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: var(--shadow-soft);
+    transition: all var(--animation-speed) var(--animation-curve);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 120px;
+    position: relative;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-medium);
+    border-color: #3b82f6;
+}
+
+.stat-number {
+    font-size: 32px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+    line-height: 1.2;
+    width: 100%;
+}
+
+.stat-number.donors {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-number.patients {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-number.matches {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stat-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: 100%;
+}
+
 /* Form Utilities */
 .form-loading {
     opacity: 0.6;
@@ -1214,7 +1653,7 @@ table,
 }
 
 .match-item {
-    background: var(--card-bg);
+    background: var(--bg-primary);
     border-radius: 10px;
     padding: 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -1228,9 +1667,9 @@ table,
 }
 
 .match-item h3 {
-    color: var(--primary-color);
+    color: var(--text-primary);
     margin-top: 0;
-    border-bottom: 2px solid var(--primary-color);
+    border-bottom: 2px solid var(--primary-gradient);
     padding-bottom: 10px;
 }
 
@@ -1240,7 +1679,7 @@ table,
 }
 
 .match-item strong {
-    color: var(--text-color);
+    color: var(--text-primary);
 }
 
 /* Alert styles */
@@ -1262,6 +1701,48 @@ table,
     border: 1px solid #f5c6cb;
 }
 
+/* Utility Classes */
+.mb-4 {
+    margin-bottom: 1rem;
+}
+
+.mb-6 {
+    margin-bottom: 1.5rem;
+}
+
+.mb-8 {
+    margin-bottom: 2rem;
+}
+
+.mt-4 {
+    margin-top: 1rem;
+}
+
+.mt-6 {
+    margin-top: 1.5rem;
+}
+
+.flex {
+    display: flex;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
+.grid {
+    display: grid;
+}
+
+.grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .matches-list {
@@ -1277,5 +1758,42 @@ table,
         margin: 5px 0;
         width: 100%;
         text-align: center;
+    }
+    
+    .grid-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-header {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .stat-card {
+        min-height: 100px;
+        padding: 20px;
+    }
+    
+    .stat-number {
+        font-size: 28px;
+    }
+    
+    .file-upload-input {
+        flex-direction: column;
+    }
+    
+    .file-upload-button {
+        width: 100%;
+    }
+    
+    .pdf-preview {
+        width: 32px;
+        height: 32px;
+        line-height: 32px;
+        font-size: 14px;
+    }
+    
+    .pdf-modal-body iframe {
+        height: 50vh;
     }
 }

@@ -23,7 +23,7 @@
 
 <div class="container">
     <h2>Add Donor</h2>
-    <form id="donorForm" method="POST">
+    <form id="donorForm" method="POST" enctype="multipart/form-data">
         <div class="form-group">
             <label>Name</label>
             <input type="text" name="name" required>
@@ -69,6 +69,16 @@
             </select>
         </div>
         
+        <div class="form-group">
+            <label class="file-upload-label">Medical Document (PDF)</label>
+            <div class="file-upload-input">
+                <div class="file-upload-text" id="donor-file-name">No file chosen</div>
+                <input type="file" name="medical_document" accept=".pdf" id="donor-medical-document">
+                <button type="button" class="file-upload-button">Browse</button>
+            </div>
+            <small class="file-upload-instructions">Upload complete medical records (optional)</small>
+        </div>
+        
         <button type="submit" class="btn btn-primary">Add Donor</button>
     </form>
 </div>
@@ -84,6 +94,12 @@
 </div>
 
 <script>
+// File input handling
+document.getElementById('donor-medical-document').addEventListener('change', function(e) {
+    const fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+    document.getElementById('donor-file-name').textContent = fileName;
+});
+
 document.getElementById('donorForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -105,6 +121,7 @@ document.getElementById('donorForm').addEventListener('submit', function(e) {
             showSuccessPopup(data.message, data.unique_id);
             // Reset form
             this.reset();
+            document.getElementById('donor-file-name').textContent = 'No file chosen';
         } else {
             alert('Error: ' + (data.message || 'Failed to add donor'));
         }

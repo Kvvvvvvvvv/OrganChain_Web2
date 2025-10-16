@@ -3,6 +3,16 @@
 <head>
     <title>Match Records</title>
     <link rel="stylesheet" href="../static/style.css">
+    <style>
+        .unique-id-cell {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            background: var(--bg-tertiary);
+            padding: 4px 8px;
+            border-radius: 6px;
+            color: var(--text-muted);
+        }
+    </style>
 </head>
 <body>
 <nav class="navbar">
@@ -40,14 +50,14 @@
                 {% for match in matches %}
                 <tr>
                     <td>{{ match.donor_name }}</td>
-                    <td style="font-family: 'Courier New', monospace; font-size: 12px;">{{ match.donor_unique_id[:8] }}...</td>
+                    <td class="unique-id-cell">{{ match.donor_unique_id[:8] }}...</td>
                     <td>{{ match.patient_name }}</td>
-                    <td style="font-family: 'Courier New', monospace; font-size: 12px;">{{ match.patient_unique_id[:8] }}...</td>
-                    <td>{{ match.organ }}</td>
-                    <td>{{ match.blood_type }}</td>
-                    <td>{{ match.donor_hospital }}</td>
-                    <td>{{ match.patient_hospital }}</td>
-                    <td>{{ match.match_date[:10] if match.match_date else 'N/A' }}</td>
+                    <td class="unique-id-cell">{{ match.patient_unique_id[:8] }}...</td>
+                    <td><span class="organ-badge">{{ match.organ }}</span></td>
+                    <td><span class="blood-type-badge">{{ match.blood_type }}</span></td>
+                    <td><span class="hospital-badge">{{ match.donor_hospital }}</span></td>
+                    <td><span class="hospital-badge">{{ match.patient_hospital }}</span></td>
+                    <td class="registration-date">{{ match.match_date[:10] if match.match_date else 'N/A' }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

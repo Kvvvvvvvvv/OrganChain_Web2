@@ -3,32 +3,86 @@
 <head>
     <title>Hospital Dashboard</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Hospital Dashboard</h1>
-            <div class="hospital-info">
-                <p><strong>Hospital:</strong> {{ hospital_name }}</p>
-                <p><strong>Email:</strong> {{ hospital_email }}</p>
-                <p><strong>Location:</strong> {{ hospital_location }}</p>
-                {% if hospital_wallet %}
-                <p><strong>Wallet Address:</strong> {{ hospital_wallet }}</p>
-                {% endif %}
+    <!-- Modern Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a class="brand" href="/hospital_dashboard">Organ Donor Chain</a>
+            <ul class="nav-links">
+                <li><a href="/add_donor"><i class="fas fa-user-plus"></i> Add Donor</a></li>
+                <li><a href="/add_patient"><i class="fas fa-procedures"></i> Add Patient</a></li>
+                <li><a href="/hospital_donors"><i class="fas fa-user-friends"></i> View Donors</a></li>
+                <li><a href="/hospital_patients"><i class="fas fa-hospital-user"></i> View Patients</a></li>
+                <li><a href="/hospital_matches"><i class="fas fa-heart"></i> View Matches</a></li>
+                <li><a href="/logout" class="btn-danger"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-inner">
+            <h1>🏥 {{ hospital_name }} Dashboard</h1>
+            <p>Manage donors, patients, and matches at your hospital</p>
+        </div>
+    </section>
+
+    <!-- Main Container -->
+    <div class="container container-wide">
+        <!-- Hospital Info -->
+        <div class="card mb-8">
+            <h2>Hospital Information</h2>
+            <div class="grid grid-3">
+                <div class="card">
+                    <h3><i class="fas fa-hospital"></i> Hospital</h3>
+                    <p>{{ hospital_name }}</p>
+                </div>
+                <div class="card">
+                    <h3><i class="fas fa-envelope"></i> Email</h3>
+                    <p>{{ hospital_email }}</p>
+                </div>
+                <div class="card">
+                    <h3><i class="fas fa-map-marker-alt"></i> Location</h3>
+                    <p>{{ hospital_location }}</p>
+                </div>
             </div>
-            <div class="nav-buttons">
-                <a href="/add_donor" class="btn">Add Donor</a>
-                <a href="/add_patient" class="btn">Add Patient</a>
-                <a href="/hospital_donors" class="btn">View Donors</a>
-                <a href="/hospital_patients" class="btn">View Patients</a>
-                <a href="/hospital_matches" class="btn">View Matches</a>
-                <a href="/logout" class="btn btn-danger">Logout</a>
+            {% if hospital_wallet %}
+            <div class="card mt-6">
+                <h3><i class="fas fa-wallet"></i> Wallet Address</h3>
+                <p>{{ hospital_wallet }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-header">
+            <div class="stat-card">
+                <div class="stat-number">{{ donors|length }}</div>
+                <div class="stat-label">Donors</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ patients|length }}</div>
+                <div class="stat-label">Patients</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ matches|length }}</div>
+                <div class="stat-label">Matches</div>
             </div>
         </div>
 
-        <div class="dashboard">
-            <div class="card">
-                <h2>Donors</h2>
+        <!-- Donors Section -->
+        <div class="card">
+            <div class="flex justify-between items-center mb-6">
+                <h2><i class="fas fa-user-friends"></i> Donors</h2>
+                <a href="/add_donor" class="btn btn-primary" style="width: auto;">
+                    <i class="fas fa-plus"></i> Add Donor
+                </a>
+            </div>
+            
+            <div class="table-container">
                 <table>
                     <thead>
                         <tr>
@@ -47,22 +101,47 @@
                         {% for donor in donors %}
                         <tr>
                             <td>{{ donor[0] }}</td>
-                            <td>{{ donor[1] }}</td>
+                            <td class="unique-id-cell">{{ donor[1][:8] }}...</td>
                             <td>{{ donor[2] }}</td>
                             <td>{{ donor[3] }}</td>
                             <td>{{ donor[4] }}</td>
-                            <td>{{ donor[5] }}</td>
-                            <td>{{ donor[6] }}</td>
-                            <td>{{ donor[7] }}</td>
-                            <td>{{ donor[8] }}</td>
+                            <td><span class="status-badge">{{ donor[5] }}</span></td>
+                            <td><span class="status-badge">{{ donor[6] }}</span></td>
+                            <td>
+                                {% if donor[7] == 'Matched' %}
+                                <span class="status-badge status-matched">✅ Matched</span>
+                                {% else %}
+                                <span class="status-badge status-not-matched">⏳ Available</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ donor[8][:10] }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+            
+            {% if not donors %}
+            <div class="text-center" style="padding: 40px 20px;">
+                <h3>No Donors Found</h3>
+                <p>There are currently no donors registered at your hospital.</p>
+                <a href="/add_donor" class="btn btn-primary" style="width: auto; margin-top: 20px;">
+                    <i class="fas fa-plus"></i> Add First Donor
+                </a>
+            </div>
+            {% endif %}
+        </div>
 
-            <div class="card">
-                <h2>Patients</h2>
+        <!-- Patients Section -->
+        <div class="card">
+            <div class="flex justify-between items-center mb-6">
+                <h2><i class="fas fa-procedures"></i> Patients</h2>
+                <a href="/add_patient" class="btn btn-primary" style="width: auto;">
+                    <i class="fas fa-plus"></i> Add Patient
+                </a>
+            </div>
+            
+            <div class="table-container">
                 <table>
                     <thead>
                         <tr>
@@ -81,19 +160,35 @@
                         {% for patient in patients %}
                         <tr>
                             <td>{{ patient[0] }}</td>
-                            <td>{{ patient[1] }}</td>
+                            <td class="unique-id-cell">{{ patient[1][:8] }}...</td>
                             <td>{{ patient[2] }}</td>
                             <td>{{ patient[3] }}</td>
                             <td>{{ patient[4] }}</td>
-                            <td>{{ patient[5] }}</td>
-                            <td>{{ patient[6] }}</td>
-                            <td>{{ patient[7] }}</td>
-                            <td>{{ patient[8] }}</td>
+                            <td><span class="status-badge">{{ patient[5] }}</span></td>
+                            <td><span class="status-badge">{{ patient[6] }}</span></td>
+                            <td>
+                                {% if patient[7] == 'Matched' %}
+                                <span class="status-badge status-matched">✅ Matched</span>
+                                {% else %}
+                                <span class="status-badge status-not-matched">⏳ Waiting</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ patient[8][:10] }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+            
+            {% if not patients %}
+            <div class="text-center" style="padding: 40px 20px;">
+                <h3>No Patients Found</h3>
+                <p>There are currently no patients registered at your hospital.</p>
+                <a href="/add_patient" class="btn btn-primary" style="width: auto; margin-top: 20px;">
+                    <i class="fas fa-plus"></i> Add First Patient
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </body>

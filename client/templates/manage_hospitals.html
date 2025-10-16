@@ -3,54 +3,103 @@
 <head>
     <title>Manage Hospitals</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Admin Dashboard</h1>
-            <div class="nav-buttons">
-                <a href="/add_hospital" class="btn">Add Hospital</a>
-                <a href="/manage_hospitals" class="btn">Manage Hospitals</a>
-                <a href="/admin_donors" class="btn">View All Donors</a>
-                <a href="/admin_patients" class="btn">View All Patients</a>
-                <a href="/admin_matches" class="btn">View All Matches</a>
-                <a href="/logout" class="btn btn-danger">Logout</a>
+    <!-- Modern Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a class="brand" href="/manage_hospitals">Organ Donor Chain</a>
+            <ul class="nav-links">
+                <li><a href="/add_hospital"><i class="fas fa-hospital"></i> Add Hospital</a></li>
+                <li><a href="/manage_hospitals"><i class="fas fa-list"></i> Manage Hospitals</a></li>
+                <li><a href="/admin_donors"><i class="fas fa-user-friends"></i> All Donors</a></li>
+                <li><a href="/admin_patients"><i class="fas fa-procedures"></i> All Patients</a></li>
+                <li><a href="/admin_matches"><i class="fas fa-heart"></i> All Matches</a></li>
+                <li><a href="/logout" class="btn-danger"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-inner">
+            <h1>🏥 Admin Dashboard</h1>
+            <p>Manage hospitals, donors, patients, and matches across the organ donation network</p>
+        </div>
+    </section>
+
+    <!-- Main Container -->
+    <div class="container container-wide">
+        <!-- Statistics Header -->
+        <div class="stats-header">
+            <div class="stat-card">
+                <div class="stat-number">{{ hospitals|length }}</div>
+                <div class="stat-label">Hospitals</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number donors">{{ donors_count or 0 }}</div>
+                <div class="stat-label">Total Donors</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number patients">{{ patients_count or 0 }}</div>
+                <div class="stat-label">Total Patients</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number matches">{{ matches_count or 0 }}</div>
+                <div class="stat-label">Total Matches</div>
             </div>
         </div>
 
+        <!-- Manage Hospitals Card -->
         <div class="card">
             <h2>Manage Hospitals</h2>
             {% if message %}
             <div class="alert alert-success">{{ message }}</div>
             {% endif %}
             
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Location</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for hospital in hospitals %}
-                    <tr>
-                        <td>{{ hospital[0] }}</td>
-                        <td>{{ hospital[1] }}</td>
-                        <td>{{ hospital[2] }}</td>
-                        <td>{{ hospital[3] }}</td>
-                        <td>
-                            <form method="POST" action="/delete_hospital" style="display:inline;">
-                                <input type="hidden" name="hospital_id" value="{{ hospital[0] }}">
-                                <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this hospital?')">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Location</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for hospital in hospitals %}
+                        <tr>
+                            <td>{{ hospital[0] }}</td>
+                            <td>{{ hospital[1] }}</td>
+                            <td>{{ hospital[2] }}</td>
+                            <td>{{ hospital[3] }}</td>
+                            <td class="table-actions">
+                                <form method="POST" action="/delete_hospital" style="display:inline;">
+                                    <input type="hidden" name="hospital_id" value="{{ hospital[0] }}">
+                                    <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this hospital?')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if not hospitals %}
+            <div class="text-center" style="padding: 40px 20px;">
+                <h3>No Hospitals Found</h3>
+                <p>There are currently no hospitals registered in the system.</p>
+                <a href="/add_hospital" class="btn btn-primary" style="width: auto; margin-top: 20px;">
+                    <i class="fas fa-plus"></i> Add First Hospital
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </body>

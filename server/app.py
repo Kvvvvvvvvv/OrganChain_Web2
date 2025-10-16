@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, redirect, session, jsonify
+from flask import Flask, render_template, request, redirect, session, jsonify, send_from_directory
+import os
 import sqlite3
 import uuid
 import datetime
@@ -16,6 +17,13 @@ app = Flask(__name__,
             template_folder='../client/templates',
             static_folder='../client/static')
 app.secret_key = "secret123"
+
+# Add custom filter for basename
+@app.template_filter('basename')
+def basename_filter(path):
+    if path:
+        return os.path.basename(path)
+    return ''
 
 # --- Initialize blockchain ---
 if not os.path.exists("secret.key"):
@@ -69,6 +77,7 @@ def init_db():
         organ TEXT,
         status TEXT DEFAULT 'Not Matched',
         registration_date TEXT DEFAULT CURRENT_TIMESTAMP,
+        medical_document_path TEXT,
         FOREIGN KEY (hospital_id) REFERENCES hospital(id)
     )
     ''')
@@ -86,6 +95,7 @@ def init_db():
         organ TEXT,
         status TEXT DEFAULT 'Not Matched',
         registration_date TEXT DEFAULT CURRENT_TIMESTAMP,
+        medical_document_path TEXT,
         FOREIGN KEY (hospital_id) REFERENCES hospital(id)
     )
     ''')
@@ -137,6 +147,13 @@ def init_db():
     hospital_columns = [column[1] for column in c.fetchall()]
     if 'wallet_address' not in hospital_columns:
         c.execute("ALTER TABLE hospital ADD COLUMN wallet_address TEXT")
+    
+    # Add medical_document_path columns if they don't exist
+    if 'medical_document_path' not in donor_columns:
+        c.execute("ALTER TABLE donor ADD COLUMN medical_document_path TEXT")
+    
+    if 'medical_document_path' not in patient_columns:
+        c.execute("ALTER TABLE patient ADD COLUMN medical_document_path TEXT")
     
     # Update existing records with unique IDs and registration dates if they don't have them
     c.execute("UPDATE donor SET unique_id = ? WHERE unique_id IS NULL", (str(uuid.uuid4()),))
@@ -377,7 +394,7 @@ def admin_donors():
     
     try:
         c.execute('''
-            SELECT d.id, d.unique_id, d.name, d.age, d.gender, d.blood_type, d.organ, d.status, d.registration_date, h.name as hospital_name
+            SELECT d.id, d.unique_id, d.name, d.age, d.gender, d.blood_type, d.organ, d.status, d.registration_date, h.name as hospital_name, d.medical_document_path
             FROM donor d
             JOIN hospital h ON d.hospital_id = h.id
             ORDER BY d.registration_date ASC
@@ -392,7 +409,7 @@ def admin_donors():
             ORDER BY d.id ASC
         ''')
         old_donors = c.fetchall()
-        donors = [(d[0], 'N/A', d[1], d[2], d[3], d[4], d[5], d[6], 'N/A', d[7]) for d in old_donors]
+        donors = [(d[0], 'N/A', d[1], d[2], d[3], d[4], d[5], d[6], 'N/A', d[7], None) for d in old_donors]
     
     conn.close()
     return render_template('admin_donors.html', donors=donors)
@@ -408,7 +425,7 @@ def admin_patients():
     
     try:
         c.execute('''
-            SELECT p.id, p.unique_id, p.name, p.age, p.gender, p.blood_type, p.organ, p.status, p.registration_date, h.name as hospital_name
+            SELECT p.id, p.unique_id, p.name, p.age, p.gender, p.blood_type, p.organ, p.status, p.registration_date, h.name as hospital_name, p.medical_document_path
             FROM patient p
             JOIN hospital h ON p.hospital_id = h.id
             ORDER BY p.registration_date ASC
@@ -423,7 +440,7 @@ def admin_patients():
             ORDER BY p.id ASC
         ''')
         old_patients = c.fetchall()
-        patients = [(p[0], 'N/A', p[1], p[2], p[3], p[4], p[5], p[6], 'N/A', p[7]) for p in old_patients]
+        patients = [(p[0], 'N/A', p[1], p[2], p[3], p[4], p[5], p[6], 'N/A', p[7], None) for p in old_patients]
     
     conn.close()
     return render_template('admin_patients.html', patients=patients)
@@ -567,9 +584,21 @@ def manage_hospitals():
     c = conn.cursor()
     c.execute("SELECT id, name, email, location FROM hospital")
     hospitals = c.fetchall()
+    
+    # Get counts for statistics
+    c.execute("SELECT COUNT(*) FROM donor")
+    donors_count = c.fetchone()[0]
+    
+    c.execute("SELECT COUNT(*) FROM patient")
+    patients_count = c.fetchone()[0]
+    
+    c.execute("SELECT COUNT(*) FROM match_record")
+    matches_count = c.fetchone()[0]
+    
     conn.close()
     message = request.args.get('message')
-    return render_template('manage_hospitals.html', hospitals=hospitals, message=message)
+    return render_template('manage_hospitals.html', hospitals=hospitals, donors_count=donors_count, 
+                          patients_count=patients_count, matches_count=matches_count, message=message)
 
 @app.route('/delete_hospital', methods=['POST'])
 def delete_hospital():
@@ -637,6 +666,23 @@ def add_donor():
         blood_type = request.form['blood_type']
         organ = request.form['organ']
         
+        # Handle PDF file upload
+        medical_document_path = None
+        if 'medical_document' in request.files:
+            file = request.files['medical_document']
+            if file and file.filename != '' and file.filename.lower().endswith('.pdf'):
+                # Create uploads directory if it doesn't exist
+                uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
+                if not os.path.exists(uploads_dir):
+                    os.makedirs(uploads_dir)
+                
+                # Generate unique filename
+                filename = f"donor_{str(uuid.uuid4())}_{file.filename}"
+                file_path = os.path.join(uploads_dir, filename)
+                file.save(file_path)
+                # Store only the filename, not the full path
+                medical_document_path = filename
+        
         # Generate unique ID and current timestamp
         unique_id = str(uuid.uuid4())
         registration_date = datetime.datetime.now().isoformat()
@@ -644,10 +690,10 @@ def add_donor():
         conn = sqlite3.connect(DB)
         c = conn.cursor()
         
-        # Try new insert with unique_id, status and registration_date, fallback to old insert if needed
+        # Try new insert with unique_id, status, registration_date, and medical_document_path, fallback to old insert if needed
         try:
-            c.execute("INSERT INTO donor (unique_id, hospital_id, name, age, gender, blood_type, organ, status, registration_date) VALUES (?,?,?,?,?,?,?,?,?)",
-                      (unique_id, hospital_id, name, age, gender, blood_type, organ, 'Not Matched', registration_date))
+            c.execute("INSERT INTO donor (unique_id, hospital_id, name, age, gender, blood_type, organ, status, registration_date, medical_document_path) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                      (unique_id, hospital_id, name, age, gender, blood_type, organ, 'Not Matched', registration_date, medical_document_path))
         except sqlite3.OperationalError:
             # Fallback to old insert without new columns
             c.execute("INSERT INTO donor (hospital_id, name, age, gender, blood_type, organ, status) VALUES (?,?,?,?,?,?,?)",
@@ -697,6 +743,23 @@ def add_patient():
         blood_type = request.form['blood_type']
         organ = request.form['organ']
         
+        # Handle PDF file upload
+        medical_document_path = None
+        if 'medical_document' in request.files:
+            file = request.files['medical_document']
+            if file and file.filename != '' and file.filename.lower().endswith('.pdf'):
+                # Create uploads directory if it doesn't exist
+                uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
+                if not os.path.exists(uploads_dir):
+                    os.makedirs(uploads_dir)
+                
+                # Generate unique filename
+                filename = f"patient_{str(uuid.uuid4())}_{file.filename}"
+                file_path = os.path.join(uploads_dir, filename)
+                file.save(file_path)
+                # Store only the filename, not the full path
+                medical_document_path = filename
+        
         # Generate unique ID and current timestamp
         unique_id = str(uuid.uuid4())
         registration_date = datetime.datetime.now().isoformat()
@@ -704,10 +767,10 @@ def add_patient():
         conn = sqlite3.connect(DB)
         c = conn.cursor()
         
-        # Try new insert with unique_id, status and registration_date, fallback to old insert if needed
+        # Try new insert with unique_id, status, registration_date, and medical_document_path, fallback to old insert if needed
         try:
-            c.execute("INSERT INTO patient (unique_id, hospital_id, name, age, gender, blood_type, organ, status, registration_date) VALUES (?,?,?,?,?,?,?,?,?)",
-                      (unique_id, hospital_id, name, age, gender, blood_type, organ, 'Not Matched', registration_date))
+            c.execute("INSERT INTO patient (unique_id, hospital_id, name, age, gender, blood_type, organ, status, registration_date, medical_document_path) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                      (unique_id, hospital_id, name, age, gender, blood_type, organ, 'Not Matched', registration_date, medical_document_path))
         except sqlite3.OperationalError:
             # Fallback to old insert without new columns
             c.execute("INSERT INTO patient (hospital_id, name, age, gender, blood_type, organ, status) VALUES (?,?,?,?,?,?,?)",
@@ -759,7 +822,7 @@ def hospital_donors():
     
     try:
         c.execute('''
-            SELECT id, unique_id, name, age, gender, blood_type, organ, status, registration_date
+            SELECT id, unique_id, name, age, gender, blood_type, organ, status, registration_date, medical_document_path
             FROM donor
             WHERE hospital_id = ?
             ORDER BY registration_date ASC
@@ -792,7 +855,7 @@ def hospital_patients():
     
     try:
         c.execute('''
-            SELECT id, unique_id, name, age, gender, blood_type, organ, status, registration_date
+            SELECT id, unique_id, name, age, gender, blood_type, organ, status, registration_date, medical_document_path
             FROM patient
             WHERE hospital_id = ?
             ORDER BY registration_date ASC
@@ -1204,6 +1267,21 @@ def sync_to_blockchain():
         return jsonify({"message": "Successfully synced all database records to blockchain"})
     except Exception as e:
         return jsonify({"error": f"Failed to sync to blockchain: {str(e)}"}), 500
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
+
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(os.path.join(os.path.dirname(__file__), 'uploads'), filename)
+
+@app.route('/view_pdf/<path:filepath>')
+def view_pdf(filepath):
+    filename = os.path.basename(filepath)
+    title = "Donor Medical Document" if "donor" in filename.lower() else "Patient Medical Document"
+    return render_template('view_pdf.html', filepath=filepath, filename=filename, title=title)
 
 if __name__ == '__main__':
     app.run(debug=True)

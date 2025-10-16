@@ -3,78 +3,8 @@
 <head>
     <title>My Donors - {{ hospital_name }}</title>
     <link rel="stylesheet" href="../static/style.css">
-    <style>
-        .stats-header {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-        
-        .stat-card {
-            background: var(--bg-primary);
-            border: 2px solid var(--border-color);
-            border-radius: 16px;
-            padding: 24px;
-            text-align: center;
-            box-shadow: var(--shadow-soft);
-        }
-        
-        .stat-number {
-            font-size: 32px;
-            font-weight: 900;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 8px;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .status-matched {
-            background: #10b981;
-            color: white;
-        }
-        
-        .status-not-matched {
-            background: #f59e0b;
-            color: white;
-        }
-        
-        .unique-id-cell {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            background: var(--bg-tertiary);
-            padding: 4px 8px;
-            border-radius: 6px;
-            color: var(--text-muted);
-        }
-        
-        .hospital-badge {
-            background: var(--primary-gradient);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-    </style>
+    <!-- Include Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 <nav class="navbar">
@@ -125,6 +55,7 @@
                     <th>Organ</th>
                     <th>Status</th>
                     <th>Registered</th>
+                    <th>Medical Document</th>
                 </tr>
             </thead>
             <tbody>
@@ -135,8 +66,8 @@
                     <td>{{ donor[2] }}</td>
                     <td>{{ donor[3] }}</td>
                     <td>{{ donor[4] }}</td>
-                    <td><span style="background: var(--secondary-gradient); color: white; padding: 4px 12px; border-radius: 12px; font-weight: 600;">{{ donor[5] }}</span></td>
-                    <td><span style="background: var(--primary-gradient); color: white; padding: 4px 12px; border-radius: 12px; font-weight: 600;">{{ donor[6] }}</span></td>
+                    <td><span class="blood-type-badge">{{ donor[5] }}</span></td>
+                    <td><span class="organ-badge">{{ donor[6] }}</span></td>
                     <td>
                         {% if donor[7] == 'Matched' %}
                         <span class="status-badge status-matched">✅ Matched</span>
@@ -144,7 +75,25 @@
                         <span class="status-badge status-not-matched">⏳ Available</span>
                         {% endif %}
                     </td>
-                    <td>{{ donor[8][:10] if donor[8] != 'N/A' else 'N/A' }}</td>
+                    <td class="registration-date">{{ donor[8][:10] if donor[8] != 'N/A' else 'N/A' }}</td>
+                    <td>
+                        {% if donor[9] %}
+                        <div class="pdf-actions">
+                            <span class="pdf-preview" onclick="openPdfModal('{{ donor[9] }}', '{{ donor[9]|basename }}')" title="View Medical Document">
+                                <i class="fas fa-file-pdf"></i>
+                            </span>
+                            <span class="pdf-preview-text" onclick="openPdfModal('{{ donor[9] }}', '{{ donor[9]|basename }}')">View</span>
+                            <a href="/uploads/{{ donor[9] }}" download="{{ donor[9]|basename }}" class="pdf-download-btn" title="Download Medical Document">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            <span class="pdf-download-text">
+                                <a href="/uploads/{{ donor[9] }}" download="{{ donor[9]|basename }}">Download</a>
+                            </span>
+                        </div>
+                        {% else %}
+                        <span class="no-document">No document</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -163,6 +112,60 @@
         <a href="/hospital_dashboard" class="btn-primary">Back to Dashboard</a>
     </div>
 </div>
+
+<!-- PDF Modal -->
+<div id="pdfModal" class="pdf-modal">
+    <div class="pdf-modal-content">
+        <div class="pdf-modal-header">
+            <h3>Medical Document Preview</h3>
+            <button class="pdf-modal-close">&times;</button>
+        </div>
+        <div class="pdf-modal-body">
+            <iframe id="pdfModalFrame" src=""></iframe>
+        </div>
+        <div class="pdf-modal-footer">
+            <a id="pdfModalDownload" href="" download class="pdf-modal-download">
+                <i class="fas fa-download"></i> Download PDF
+            </a>
+            <button class="pdf-modal-close">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// PDF Modal Functionality
+function openPdfModal(pdfPath, filename) {
+    const modal = document.getElementById('pdfModal');
+    const iframe = document.getElementById('pdfModalFrame');
+    const downloadBtn = document.getElementById('pdfModalDownload');
+    
+    iframe.src = '/uploads/' + pdfPath;
+    downloadBtn.href = '/uploads/' + pdfPath;
+    downloadBtn.download = filename;
+    
+    modal.style.display = 'flex';
+}
+
+function closePdfModal() {
+    const modal = document.getElementById('pdfModal');
+    const iframe = document.getElementById('pdfModalFrame');
+    
+    modal.style.display = 'none';
+    iframe.src = '';
+}
+
+// Close modal when clicking on close button or outside the modal
+document.querySelectorAll('.pdf-modal-close').forEach(button => {
+    button.addEventListener('click', closePdfModal);
+});
+
+// Close modal when clicking outside the content
+document.getElementById('pdfModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closePdfModal();
+    }
+});
+</script>
 
 </body>
 </html>
