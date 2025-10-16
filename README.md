@@ -113,8 +113,8 @@ The platform includes a dedicated Web3 integration example that allows direct in
 6. **Configure environment variables**:
    Create a `.env` file in the project root with:
    ```env
-   GANACHE_RPC=http://127.0.0.1:7545
-   PRIVATE_KEY=0xb7704b524c611ae9888dcf3331e7bd334be5c0e084203cdbacf55bc6ac61cf79
+   GANACHE_RPC=http://127.0.0.1:8545
+   PRIVATE_KEY=your_private_key_here
    CONTRACT_JSON_PATH=./build/contracts/OrganChain.json
    ```
 
