@@ -25,6 +25,15 @@ def basename_filter(path):
         return os.path.basename(path)
     return ''
 
+# Add custom filter for timestamp to date conversion
+@app.template_filter('timestamp_to_date')
+def timestamp_to_date_filter(timestamp):
+    try:
+        import datetime
+        return datetime.datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+    except:
+        return "Invalid timestamp"
+
 # --- Initialize blockchain ---
 if not os.path.exists("secret.key"):
     key = generate_key()
@@ -113,6 +122,23 @@ def init_db():
         match_date TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (donor_id) REFERENCES donor(id),
         FOREIGN KEY (patient_id) REFERENCES patient(id)
+    )
+    ''')
+    
+    # Blockchain table for storing blockchain details
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS blockchain_records (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        block_index INTEGER,
+        unique_id TEXT,
+        previous_hash TEXT,
+        current_hash TEXT,
+        data_type TEXT,
+        name TEXT,
+        organ TEXT,
+        hospital TEXT,
+        timestamp TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
     ''')
     
@@ -338,7 +364,6 @@ def login():
         role = request.form['role']
         email = request.form['email']
         password = request.form['password']
-        wallet_address = request.form.get('wallet_address')  # Get wallet address from form
         
         conn = sqlite3.connect(DB)
         c = conn.cursor()
@@ -346,35 +371,16 @@ def login():
             c.execute("SELECT * FROM admin WHERE email=? AND password=?", (email, password))
             user = c.fetchone()
             if user:
-                # For admin, we can optionally check blockchain authentication
                 session['admin'] = user[0]
-                session['admin_wallet'] = user[3] if len(user) > 3 else None
                 return redirect('/manage_hospitals')
         elif role == 'hospital':
             c.execute("SELECT * FROM hospital WHERE email=? AND password=?", (email, password))
             user = c.fetchone()
             if user:
-                # For hospital, check if they are registered on the blockchain
-                hospital_wallet = user[5] if len(user) > 5 else None
-                # Skip blockchain check as per user request
-                # if hospital_wallet and BLOCKCHAIN_AVAILABLE:
-                #     # Check if hospital is registered on blockchain
-                #     try:
-                #         from blockchain_service import is_hospital_registered
-                #         is_registered = is_hospital_registered(hospital_wallet)
-                #         if not is_registered:
-                #             message = "Hospital not registered on blockchain"
-                #             conn.close()
-                #             return render_template('admin_login.html', message=message)
-                #     except:
-                #         # If blockchain service fails, continue without checking
-                #         pass
-                
                 session['hospital'] = user[0]
                 session['hospital_name'] = user[1]
                 session['hospital_email'] = user[2]
                 session['hospital_location'] = user[3]
-                session['hospital_wallet'] = hospital_wallet
                 return redirect('/hospital_dashboard')
             else:
                 message = "Invalid credentials"
@@ -543,14 +549,13 @@ def add_hospital():
         email = request.form['email']
         location = request.form['location']
         password = request.form['password']
-        wallet_address = request.form.get('wallet_address')  # Get wallet address
         
         try:
             conn = sqlite3.connect(DB)
             c = conn.cursor()
-            # Include wallet_address in the insert statement
-            c.execute("INSERT INTO hospital (name,email,location,password,wallet_address) VALUES (?,?,?,?,?)",
-                      (name,email,location,password,wallet_address))
+            # Insert hospital without wallet_address
+            c.execute("INSERT INTO hospital (name,email,location,password) VALUES (?,?,?,?)",
+                      (name,email,location,password))
             conn.commit()
             hospital_id = c.lastrowid
             conn.close()
@@ -595,10 +600,55 @@ def manage_hospitals():
     c.execute("SELECT COUNT(*) FROM match_record")
     matches_count = c.fetchone()[0]
     
+    # Get blockchain stats
+    try:
+        with open('../blockchain.json', 'r') as f:
+            chain = json.load(f)
+        
+        # Calculate blockchain statistics
+        total_blocks = len(chain)
+        
+        # Count donor and patient records in blockchain
+        donor_count = 0
+        patient_count = 0
+        match_count = 0
+        
+        for block in chain:
+            for entry in block['data']:
+                try:
+                    decrypted_data = blockchain.decrypt_data(entry['data_encrypted'])
+                    if 'donor_id' in decrypted_data:
+                        donor_id = decrypted_data['donor_id']
+                        if donor_id.startswith('patient_'):
+                            patient_count += 1
+                        elif not donor_id.startswith('hospital_'):
+                            donor_count += 1
+                    elif 'organ_type' in decrypted_data and '_match' in decrypted_data['organ_type']:
+                        match_count += 1
+                except:
+                    pass
+        
+        blockchain_stats = {
+            'blocks': total_blocks,
+            'donors': donor_count,
+            'patients': patient_count,
+            'matches': match_count
+        }
+    except:
+        blockchain_stats = {
+            'blocks': 0,
+            'donors': 0,
+            'patients': 0,
+            'matches': 0
+        }
+    
     conn.close()
-    message = request.args.get('message')
-    return render_template('manage_hospitals.html', hospitals=hospitals, donors_count=donors_count, 
-                          patients_count=patients_count, matches_count=matches_count, message=message)
+    return render_template('manage_hospitals.html', 
+                         hospitals=hospitals, 
+                         donors_count=donors_count, 
+                         patients_count=patients_count, 
+                         matches_count=matches_count,
+                         blockchain_stats=blockchain_stats)
 
 @app.route('/delete_hospital', methods=['POST'])
 def delete_hospital():
@@ -1282,6 +1332,249 @@ def view_pdf(filepath):
     filename = os.path.basename(filepath)
     title = "Donor Medical Document" if "donor" in filename.lower() else "Patient Medical Document"
     return render_template('view_pdf.html', filepath=filepath, filename=filename, title=title)
+
+# Route to view medical documents
+@app.route('/view_document/<int:record_id>/<record_type>')
+def view_document(record_id, record_type):
+    if 'admin' not in session and 'hospital' not in session:
+        return redirect('/login')
+    
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    
+    try:
+        if record_type == 'donor':
+            c.execute("SELECT medical_document_path FROM donor WHERE id = ?", (record_id,))
+        elif record_type == 'patient':
+            c.execute("SELECT medical_document_path FROM patient WHERE id = ?", (record_id,))
+        else:
+            conn.close()
+            return "Invalid record type", 400
+        
+        result = c.fetchone()
+        conn.close()
+        
+        if result and result[0]:
+            filename = result[0]
+            # Construct the full path to the file
+            uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
+            file_path = os.path.join(uploads_dir, filename)
+            
+            # Security check: ensure the file is within the uploads directory
+            file_path = os.path.abspath(file_path)
+            uploads_dir = os.path.abspath(uploads_dir)
+            if not file_path.startswith(uploads_dir):
+                return "Access denied", 403
+            
+            # Check if file exists
+            if os.path.exists(file_path):
+                return send_from_directory(uploads_dir, filename)
+            else:
+                return "File not found", 404
+        else:
+            return "No document available for this record", 404
+    except Exception as e:
+        conn.close()
+        return f"Error accessing document: {str(e)}", 500
+
+# Route to download medical documents
+@app.route('/download_document/<int:record_id>/<record_type>')
+def download_document(record_id, record_type):
+    if 'admin' not in session and 'hospital' not in session:
+        return redirect('/login')
+    
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    
+    try:
+        if record_type == 'donor':
+            c.execute("SELECT medical_document_path FROM donor WHERE id = ?", (record_id,))
+        elif record_type == 'patient':
+            c.execute("SELECT medical_document_path FROM patient WHERE id = ?", (record_id,))
+        else:
+            conn.close()
+            return "Invalid record type", 400
+        
+        result = c.fetchone()
+        conn.close()
+        
+        if result and result[0]:
+            filename = result[0]
+            # Construct the full path to the file
+            uploads_dir = os.path.join(os.path.dirname(__file__), 'uploads')
+            file_path = os.path.join(uploads_dir, filename)
+            
+            # Security check: ensure the file is within the uploads directory
+            file_path = os.path.abspath(file_path)
+            uploads_dir = os.path.abspath(uploads_dir)
+            if not file_path.startswith(uploads_dir):
+                return "Access denied", 403
+            
+            # Check if file exists
+            if os.path.exists(file_path):
+                return send_from_directory(uploads_dir, filename, as_attachment=True)
+            else:
+                return "File not found", 404
+        else:
+            return "No document available for this record", 404
+    except Exception as e:
+        conn.close()
+        return f"Error accessing document: {str(e)}", 500
+
+# Route to delete a donor
+@app.route('/delete_donor', methods=['POST'])
+def delete_donor():
+    if 'admin' not in session:
+        return redirect('/login')
+    
+    donor_id = request.form['donor_id']
+    
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    
+    # Check if donor has a medical document
+    c.execute("SELECT medical_document_path FROM donor WHERE id = ?", (donor_id,))
+    result = c.fetchone()
+    
+    if result and result[0]:
+        # Donor has a medical document, don't delete
+        conn.close()
+        return redirect('/admin_donors?message=Cannot+delete+donor+with+medical+document.+Please+delete+the+document+first.')
+    
+    # Donor doesn't have a medical document, proceed with deletion
+    try:
+        # Delete from blockchain
+        c.execute("SELECT unique_id FROM donor WHERE id = ?", (donor_id,))
+        result = c.fetchone()
+        if result:
+            unique_id = result[0]
+            # Note: In a real blockchain, you can't actually delete records
+            # This is just for demonstration purposes
+            
+        c.execute("DELETE FROM donor WHERE id = ?", (donor_id,))
+        conn.commit()
+        conn.close()
+        return redirect('/admin_donors?message=Donor+deleted+successfully!')
+    except Exception as e:
+        conn.close()
+        return redirect('/admin_donors?message=Error+deleting+donor:+' + str(e))
+
+# Route to delete a patient
+@app.route('/delete_patient', methods=['POST'])
+def delete_patient():
+    if 'admin' not in session:
+        return redirect('/login')
+    
+    patient_id = request.form['patient_id']
+    
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    
+    # Check if patient has a medical document
+    c.execute("SELECT medical_document_path FROM patient WHERE id = ?", (patient_id,))
+    result = c.fetchone()
+    
+    if result and result[0]:
+        # Patient has a medical document, don't delete
+        conn.close()
+        return redirect('/admin_patients?message=Cannot+delete+patient+with+medical+document.+Please+delete+the+document+first.')
+    
+    # Patient doesn't have a medical document, proceed with deletion
+    try:
+        # Delete from blockchain
+        c.execute("SELECT unique_id FROM patient WHERE id = ?", (patient_id,))
+        result = c.fetchone()
+        if result:
+            unique_id = result[0]
+            # Note: In a real blockchain, you can't actually delete records
+            # This is just for demonstration purposes
+            
+        c.execute("DELETE FROM patient WHERE id = ?", (patient_id,))
+        conn.commit()
+        conn.close()
+        return redirect('/admin_patients?message=Patient+deleted+successfully!')
+    except Exception as e:
+        conn.close()
+        return redirect('/admin_patients?message=Error+deleting+patient:+' + str(e))
+
+# Blockchain Information Page
+@app.route('/blockchain_info')
+def blockchain_info():
+    if 'admin' not in session:
+        return redirect('/login')
+    
+    try:
+        # Get blockchain records from database
+        conn = sqlite3.connect(DB)
+        c = conn.cursor()
+        
+        # Get all blockchain records ordered by block index
+        c.execute('''
+            SELECT block_index, unique_id, data_type, name, organ, hospital, timestamp, previous_hash, current_hash
+            FROM blockchain_records
+            ORDER BY block_index ASC
+        ''')
+        
+        rows = c.fetchall()
+        blockchain_records = []
+        
+        for row in rows:
+            # Format timestamp for display
+            timestamp = row[6]
+            try:
+                # Try to convert timestamp to readable format
+                import datetime
+                if isinstance(timestamp, (int, float)):
+                    formatted_timestamp = datetime.datetime.fromtimestamp(float(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+                else:
+                    # If it's already a string, try to parse it
+                    formatted_timestamp = timestamp
+            except:
+                formatted_timestamp = "Invalid timestamp"
+            
+            record_data = {
+                'block_index': row[0],
+                'unique_id': row[1],
+                'type': row[2],
+                'name': row[3],
+                'organ': row[4],
+                'hospital': row[5],
+                'timestamp': formatted_timestamp,
+                'previous_hash': row[7],
+                'current_hash': row[8]
+            }
+            blockchain_records.append(record_data)
+        
+        # Get blockchain stats
+        c.execute("SELECT COUNT(*) FROM blockchain_records")
+        total_blocks = c.fetchone()[0]
+        
+        c.execute("SELECT COUNT(*) FROM blockchain_records WHERE data_type = 'donor'")
+        donor_count = c.fetchone()[0]
+        
+        c.execute("SELECT COUNT(*) FROM blockchain_records WHERE data_type = 'patient'")
+        patient_count = c.fetchone()[0]
+        
+        c.execute("SELECT COUNT(*) FROM blockchain_records WHERE data_type = 'match'")
+        match_count = c.fetchone()[0]
+        
+        conn.close()
+        
+        blockchain_stats = {
+            'blocks': total_blocks,
+            'donors': donor_count,
+            'patients': patient_count,
+            'matches': match_count
+        }
+        
+        return render_template('blockchain_info.html', 
+                             blockchain_records=blockchain_records,
+                             blockchain_stats=blockchain_stats)
+    except Exception as e:
+        return f"Error loading blockchain data: {str(e)}"
+
+# Web3 Example Page
+
 
 if __name__ == '__main__':
     app.run(debug=True)

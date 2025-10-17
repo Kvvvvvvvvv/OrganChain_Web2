@@ -9,7 +9,7 @@ load_dotenv()
 GANACHE_RPC = os.getenv("GANACHE_RPC", "http://127.0.0.1:7545")
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 # Fix the path to the contract JSON file
-CONTRACT_JSON_PATH = os.getenv("CONTRACT_JSON_PATH", "../build/contracts/OrganChain.json")
+CONTRACT_JSON_PATH = os.getenv("CONTRACT_JSON_PATH", "./deployed_contract.json")
 
 def is_connected():
     """Check if we can connect to the blockchain"""
